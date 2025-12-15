@@ -1,17 +1,31 @@
 package it.yuruni;
 
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.utils.ScreenUtils;
+
+import it.yuruni.graphics.animation.Glyph;
+
 
 /** First screen of the application. Displayed after the application is created. */
 public class FirstScreen implements Screen {
+
+    private SpriteBatch batch;
+
     @Override
     public void show() {
         // Prepare your screen here.
+        batch = new SpriteBatch();
     }
 
     @Override
     public void render(float delta) {
         // Draw your screen here. "delta" is the time since last render in seconds.
+        ScreenUtils.clear(0, 0, 0, 1);
+
+        batch.begin();
+        Main.animationManager.updateAndRenderGlyphs(delta, batch);
+        batch.end();
     }
 
     @Override
@@ -41,5 +55,6 @@ public class FirstScreen implements Screen {
     @Override
     public void dispose() {
         // Destroy screen's assets here.
+        batch.dispose();
     }
 }
