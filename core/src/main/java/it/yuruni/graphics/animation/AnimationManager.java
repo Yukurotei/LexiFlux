@@ -96,6 +96,26 @@ public class AnimationManager {
         animations.add(anim);
     }
 
+    public void animatePulse(Glyph target, float bpm, float magnitude) {
+        Animation anim = animationPool.obtain();
+        anim.initPulse(target, bpm, magnitude);
+        animations.add(anim);
+    }
+
+    /**
+     * Immediately stops and removes all animations running on the specified glyph.
+     * @param target The glyph whose animations should be stopped.
+     */
+    public void stopAllAnimations(Glyph target) {
+        for (int i = animations.size - 1; i >= 0; i--) {
+            Animation anim = animations.get(i);
+            if (anim.getAnimatedGlyph() == target) {
+                animations.removeIndex(i);
+                animationPool.free(anim);
+            }
+        }
+    }
+
     private static class Animation implements Pool.Poolable {
         private Glyph target; // Changed from AnimatedGlyph
         private Easing easing;
@@ -115,6 +135,11 @@ public class AnimationManager {
 
         // Rotation
         private float startRotation, toRotation;
+
+        // Pulse
+        private boolean isPulseAnimation = false;
+        private float bpm;
+        private float magnitude;
 
 
         public void initMove(Glyph target, float toX, float toY, float duration, Easing easing) { // Changed from AnimatedGlyph
@@ -167,6 +192,28 @@ public class AnimationManager {
             this.toRotation = Float.NaN;
         }
 
+        public void initPulse(Glyph target, float bpm, float magnitude) {
+            this.target = target;
+            this.duration = Float.POSITIVE_INFINITY; // Makes it run indefinitely
+            this.easing = null; // Easing is not used for pulsing
+            this.time = 0;
+
+            this.startScaleX = target.getScaleX();
+            this.startScaleY = target.getScaleY();
+            this.bpm = bpm;
+            this.magnitude = magnitude;
+
+            this.isPulseAnimation = true;
+
+            // Invalidate other animation types
+            this.toX = Float.NaN;
+            this.toY = Float.NaN;
+            this.toOpacity = Float.NaN;
+            this.toRotation = Float.NaN;
+            this.toScaleX = Float.NaN; // This is important to distinguish from a regular scale
+            this.toScaleY = Float.NaN;
+        }
+
         public void initRotation(Glyph target, float toRotation, float duration, Easing easing) { // Changed from AnimatedGlyph
             this.target = target;
             this.duration = duration;
@@ -187,6 +234,23 @@ public class AnimationManager {
             if (isFinished()) return;
 
             time += delta;
+
+            if (isPulseAnimation) {
+                float beatDuration = 60f / bpm;
+                float timeInBeat = time % beatDuration;
+                float beatProgress = timeInBeat / beatDuration;
+
+                // A sine wave gives a smooth 0 -> 1 -> 0 pulse over the beat duration
+                float pulseProgress = (float) Math.sin(beatProgress * Math.PI);
+
+                float pulseAmountX = (startScaleX * magnitude) - startScaleX;
+                float pulseAmountY = (startScaleY * magnitude) - startScaleY;
+
+                target.setScaleX(startScaleX + pulseAmountX * pulseProgress);
+                target.setScaleY(startScaleY + pulseAmountY * pulseProgress);
+                return; // Pulse animation is done for this frame
+            }
+
             float progress = Math.min(1f, time / duration);
             float easedProgress = applyEasing(progress);
 
@@ -215,6 +279,9 @@ public class AnimationManager {
         }
 
         public boolean isFinished() {
+            if (isPulseAnimation) {
+                return false; // Pulse animations run indefinitely by default
+            }
             return time >= duration;
         }
 
@@ -357,6 +424,10 @@ public class AnimationManager {
             startOpacity = toOpacity = Float.NaN;
             startScaleX = startScaleY = toScaleX = toScaleY = Float.NaN;
             startRotation = toRotation = Float.NaN;
+
+            isPulseAnimation = false;
+            bpm = 0;
+            magnitude = 0;
         }
     }
 }
