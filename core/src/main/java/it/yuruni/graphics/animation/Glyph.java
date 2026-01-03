@@ -51,7 +51,8 @@ public class Glyph {
         this.x = x;
         this.y = y;
         this.isVisible = true;
-        this.hitbox = new Rectangle(x, y, texture.getWidth(), texture.getHeight());
+        this.hitbox = new Rectangle();
+        updateHitbox();
         if (addToQueue) Main.glyphs.add(this);
     }
 
@@ -91,6 +92,8 @@ public class Glyph {
      * @param delta the time elapsed since the last update
      */
     public void update(float delta) {
+        updateHitbox();
+
         if (textures != null && !textures.isEmpty() && frameTime > 0) {
             animationTimer += delta;
             if (animationTimer > frameTime) {
@@ -100,6 +103,23 @@ public class Glyph {
                 if (currentFrame >= textures.size()) currentFrame = 0;
             }
         }
+    }
+
+    protected void updateHitbox() {
+        Texture currentTexture = getTexture();
+        if (currentTexture == null) return;
+
+        float unscaledWidth = currentTexture.getWidth();
+        float unscaledHeight = currentTexture.getHeight();
+
+        float visualWidth = unscaledWidth * scaleX;
+        float visualHeight = unscaledHeight * scaleY;
+
+        //visual bottom-left corner is offset from x y cuz scaling happens from the center origin
+        float visualX = this.x + (unscaledWidth / 2f) * (1 - scaleX);
+        float visualY = this.y + (unscaledHeight / 2f) * (1 - scaleY);
+
+        hitbox.set(visualX, visualY, visualWidth, visualHeight);
     }
 
     public void dispose() {
@@ -129,7 +149,7 @@ public class Glyph {
     public Texture getTexture() {
         if (texture == null && textures.isEmpty()) return null;
         if (textures.isEmpty()) return texture;
-        
+
         return textures.get(0);
     }
 
@@ -179,7 +199,6 @@ public class Glyph {
      */
     public void setX(float x) {
         this.x = x;
-        hitbox.setX(x);
     }
 
     /**
@@ -188,7 +207,6 @@ public class Glyph {
      */
     public void setY(float y) {
         this.y = y;
-        hitbox.setY(y);
     }
 
     public void setAlpha(float alpha) {
@@ -199,6 +217,10 @@ public class Glyph {
         this.scaleX = scaleX;
     }
 
+    /**
+     *
+     * @param scaleY the new y-scale of the glyph
+     */
     public void setScaleY(float scaleY) {
         this.scaleY = scaleY;
     }
@@ -214,8 +236,6 @@ public class Glyph {
     public void setTexture(Texture texture) {
         this.texture = texture;
         this.textures = null;
-        hitbox.setWidth(texture.getWidth());
-        hitbox.setHeight(texture.getHeight());
     }
 
     /**
@@ -227,11 +247,6 @@ public class Glyph {
         this.texture = null;
         this.currentFrame = 0;
         this.animationTimer = 0;
-        if (textures != null && !textures.isEmpty()) {
-            Texture firstFrame = textures.get(0);
-            hitbox.setWidth(firstFrame.getWidth());
-            hitbox.setHeight(firstFrame.getHeight());
-        }
     }
 
     /**

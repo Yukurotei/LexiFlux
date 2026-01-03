@@ -5,6 +5,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import it.yuruni.audio.AudioEffectManager;
@@ -15,6 +16,7 @@ import it.yuruni.graphics.effects.CameraManager;
 import it.yuruni.graphics.effects.ParallaxManager;
 import it.yuruni.graphics.effects.ShaderManager;
 import it.yuruni.graphics.effects.YParticleEffect;
+import it.yuruni.ui.Button;
 
 import javax.swing.*;
 
@@ -30,6 +32,12 @@ public class FirstScreen implements Screen {
     private final EventManager eventManager = Main.eventManager;
     private AudioEffectManager audioManager;
     private float timePassed = 0f;
+
+    Button mainButton;
+
+    private Array<Glyph> fadeGlyphs;
+    private float nextBeatTime = 0f;
+    private final float beatInterval = 60f / 220f;
 
 
     @Override
@@ -73,12 +81,31 @@ public class FirstScreen implements Screen {
         flash.setScaleY(flash.getScaleY() * 100f);
         flash.setAlpha(0f);
 
-        Glyph fade = new Glyph(new Texture("./upwardsFade.png"), 0, 200, true);
-        fade.setAlpha(0f);
+        Glyph upFade = new Glyph(new Texture("./upwardsFade.png"), 0, 200, true);
+        upFade.setAlpha(0f);
+        Glyph downFade = new Glyph(Utils.rotateTextureRightAngles(new Texture("./upwardsFade.png"), 180), 0, 200, true);
+        downFade.setAlpha(0f);
+        downFade.setY(-200);
+
+        fadeGlyphs = new Array<>(new Glyph[]{upFade, downFade});
 
         Glyph logo = new Glyph(new Texture("./logo/shortLogo.png"), 323, 289 + 1000, true);
         logo.setScaleX(logo.getScaleX() * 0.15f);
         logo.setScaleY(logo.getScaleY() * 0.15f);
+
+        //Button
+        mainButton = new Button(new Texture("./logo/shortLogo.png"), -1000, -1000, () -> {
+
+        });
+        mainButton.setScaleX(mainButton.getScaleX() * 0.15f);
+        mainButton.setScaleY(mainButton.getScaleY() * 0.15f);
+        mainButton.setAlpha(0f);
+        mainButton.addOnHoverListener(() -> {
+            animationManager.animateRotation(logo, -5f, 0.2f, Easing.EASE_IN_OUT_CIRC); //Do 20 for menu
+        });
+        mainButton.addOnUnHoverListener(() -> {
+            animationManager.animateRotation(logo, 0f, 0.2f, Easing.EASE_IN_OUT_CIRC);
+        });
 
         //sfx
         Sound sliding_heavy = Gdx.audio.newSound(Gdx.files.internal("./audio/heavy-sliding.mp3"));
@@ -113,15 +140,15 @@ public class FirstScreen implements Screen {
         }));
         //Monitor flickering
         eventManager.addEvent(new Event(5f, () -> {
-            animationManager.animateFade(fade, 1f, 1f,Easing.EASE_IN_EXPO);
+            animationManager.animateFade(upFade, 1f, 1f,Easing.EASE_IN_EXPO);
         }));
         eventManager.addEvent(new Event(6f, () -> {
-            animationManager.animateFade(fade, 0.5f, 5000f,Easing.EASE_OSCILLATE_INFINITE);
+            animationManager.animateFade(upFade, 0.5f, 5000f,Easing.EASE_OSCILLATE_INFINITE);
         }));
 
         //Start focus on logo - move everything away, sound start transition
         eventManager.addEvent(new Event(8f, () -> {
-            audioManager.startTransition(5f, 0.05f, 0.5f, 13f, false);
+            audioManager.startTransition(5f, 0.005f, 0.5f, 13f, false);
             float factor = 3f;
             animationManager.animateScale(keyboard, keyboard.getScaleX() * factor, keyboard.getScaleY() * factor, 4f,Easing.EASE_IN_OUT_QUAD);
             animationManager.animateMove(keyboard, keyboard.getX() + 1000, keyboard.getY() + 180, 4f,Easing.EASE_IN_OUT_QUAD);
@@ -132,15 +159,17 @@ public class FirstScreen implements Screen {
             animationManager.animateMove(pc, pc.getX() + 1000, pc.getY() + 20, 2f,Easing.EASE_IN_OUT_CIRC);
             animationManager.animateMove(soundMemo, soundMemo.getX() - 1000, soundMemo.getY(), 2f,Easing.EASE_IN_OUT_QUAD);
             animationManager.animateMove(soundCover, soundMemo.getX() - 1000, soundMemo.getY(), 2f,Easing.EASE_IN_OUT_QUAD);
-            animationManager.animateMove(fade, fade.getX(), fade.getY() + 500, 4f,Easing.EASE_IN_OUT_ELASTIC);
+            animationManager.animateMove(upFade, upFade.getX(), upFade.getY() + 500, 4f,Easing.EASE_IN_OUT_ELASTIC);
         }));
 
+        this.nextBeatTime = 13f;
         eventManager.addEvent(new Event(13f, () -> {
+            upFade.setY(upFade.getY() - 500);
             monitor_on.stop();
             shaderManager.setPunch(1.0f);
             concentration.start();
             concentration2.start();
-            animationManager.animatePulse(logo, 220, 1.05f);
+            animationManager.animatePulse(logo, 220, 1.05f); //TODO: REPLACE WITH ACTUAL BASS DETECTION
             animationManager.animateFade(flash, 1f, 0.5f,Easing.EASE_IN_OUT_EXPO);
             parallaxManager.addLayer(bg, 0.02f, 0.1f);
         }));
@@ -151,6 +180,13 @@ public class FirstScreen implements Screen {
             animationManager.animateFade(flash, 0f, 1.5f,Easing.LINEAR);
         }));
         eventManager.addEvent(new Event(14f, () -> {
+            //Button display
+            System.out.println("[DEBUG] Positioning button at logo coords: X=" + logo.getX() + ", Y=" + logo.getY());
+            mainButton.setX(logo.getX());
+            mainButton.setY(logo.getY());
+            mainButton.setScaleX(logo.getScaleX());
+            mainButton.setScaleY(logo.getScaleY());
+
             concentration.allowCompletion();
             concentration2.allowCompletion();
             sliding_light.dispose();
@@ -169,6 +205,18 @@ public class FirstScreen implements Screen {
             audioManager.update(delta);
             cameraManager.update(delta);
             parallaxManager.update(delta);
+
+            if (mainButton != null) mainButton.update(delta);
+
+            if (timePassed >= nextBeatTime && nextBeatTime > 0) {
+                nextBeatTime += beatInterval;
+
+                Glyph targetGlyph = fadeGlyphs.random();
+                animationManager.animateFade(targetGlyph, 0.5f, 0.1f, Easing.EASE_OUT_SINE);
+                eventManager.addEvent(new Event(timePassed + 0.1f, () -> {
+                    animationManager.animateFade(targetGlyph, 0f, 0.3f, Easing.EASE_IN_SINE);
+                }));
+            }
 
             // --- Apply camera effects ---
             cameraManager.applyEffects();
