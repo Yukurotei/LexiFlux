@@ -3,8 +3,11 @@ package it.yuruni;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
@@ -17,8 +20,6 @@ import it.yuruni.graphics.effects.ParallaxManager;
 import it.yuruni.graphics.effects.ShaderManager;
 import it.yuruni.graphics.effects.YParticleEffect;
 import it.yuruni.ui.Button;
-
-import javax.swing.*;
 
 
 /** First screen of the application. Displayed after the application is created. */
@@ -38,6 +39,7 @@ public class FirstScreen implements Screen {
     private Array<Glyph> fadeGlyphs;
     private float nextBeatTime = 0f;
     private final float beatInterval = 60f / 220f;
+    private BitmapFont font;
 
 
     @Override
@@ -86,12 +88,23 @@ public class FirstScreen implements Screen {
         Glyph downFade = new Glyph(Utils.rotateTextureRightAngles(new Texture("./upwardsFade.png"), 180), 0, 200, true);
         downFade.setAlpha(0f);
         downFade.setY(-200);
-
         fadeGlyphs = new Array<>(new Glyph[]{upFade, downFade});
+
+        Glyph playMenuRect = new Glyph(new Texture("./ui/menuRect.png"), -1000, -1000, true);
+        Glyph playArrow = new Glyph(new Texture("./ui/playButton.png"), -1000, -1000, true);
 
         Glyph logo = new Glyph(new Texture("./logo/shortLogo.png"), 323, 289 + 1000, true);
         logo.setScaleX(logo.getScaleX() * 0.15f);
         logo.setScaleY(logo.getScaleY() * 0.15f);
+
+        //Some text
+        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/josefin-sans-latin-400-normal.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        parameter.size = 20;
+        parameter.color = Color.WHITE;
+        font = generator.generateFont(parameter);
+        TextGlyph tutorialText = new TextGlyph("Arrow keys to navigate, space to select", font, Main.WIDTH / 2f - 200, Main.HEIGHT / 2f - 400 - 500, true);
+        generator.dispose();
 
         //Button
         mainButton = new Button(new Texture("./logo/shortLogo.png"), -1000, -1000, () -> {
@@ -181,11 +194,16 @@ public class FirstScreen implements Screen {
         }));
         eventManager.addEvent(new Event(14f, () -> {
             //Button display
-            System.out.println("[DEBUG] Positioning button at logo coords: X=" + logo.getX() + ", Y=" + logo.getY());
             mainButton.setX(logo.getX());
             mainButton.setY(logo.getY());
             mainButton.setScaleX(logo.getScaleX());
             mainButton.setScaleY(logo.getScaleY());
+            playMenuRect.setScaleX(logo.getScaleX());
+            playMenuRect.setScaleY(logo.getScaleY());
+            playMenuRect.setX(logo.getX() + 100);
+            playMenuRect.setY(logo.getY() + 100);
+            playArrow.setX(logo.getX());
+            playArrow.setY(logo.getY());
 
             concentration.allowCompletion();
             concentration2.allowCompletion();
@@ -193,7 +211,8 @@ public class FirstScreen implements Screen {
             sliding_heavy.dispose();
             door_open_close.dispose();
             monitor_on.dispose();
-            //cameraManager.rotate(20f, 9999f,Easing.EASE_OSCILLATE_INFINITE);
+
+            animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() + 500, 2f, Easing.EASE_IN_OUT_EXPO);
         }));
     }
 
@@ -269,5 +288,6 @@ public class FirstScreen implements Screen {
         // Destroy screen's assets here.
         batch.dispose();
         audioManager.dispose();
+        font.dispose();
     }
 }
