@@ -8,6 +8,8 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import it.yuruni.graphics.animation.AnimationManager;
 import it.yuruni.graphics.animation.EventManager;
 import it.yuruni.graphics.animation.Glyph;
+import it.yuruni.graphics.effects.CameraManager;
+import it.yuruni.graphics.effects.ParallaxManager;
 import it.yuruni.graphics.effects.ShaderManager;
 import it.yuruni.graphics.effects.YParticleEffect;
 
@@ -21,6 +23,8 @@ public class Main extends Game {
     public static AnimationManager animationManager;
     public static EventManager eventManager;
     public static ShaderManager shaderManager;
+    public static CameraManager cameraManager;
+    public static ParallaxManager parallaxManager;
 
     //VirtualViewport
     public static OrthographicCamera camera;
@@ -33,9 +37,11 @@ public class Main extends Game {
         animationManager = new AnimationManager();
         eventManager = new EventManager();
         shaderManager = new ShaderManager();
+        parallaxManager = new ParallaxManager();
 
         //Cam
         camera = new OrthographicCamera();
+        cameraManager = new CameraManager(camera);
         viewport = new FitViewport(WIDTH,HEIGHT, camera);
 
         setScreen(new FirstScreen());

@@ -21,7 +21,7 @@ public class AudioEffectManager {
         this.clearTrack = Gdx.audio.newMusic(clearFile);
     }
 
-    public void startTransition(float duration, float startVolume, float endVolume, float position) {
+    public void startTransition(float duration, float startVolume, float endVolume, float position, boolean defaultLooping) {
         this.transitionDuration = duration;
         this.startVolume = startVolume;
         this.endVolume = endVolume;
@@ -31,8 +31,8 @@ public class AudioEffectManager {
         muffledTrack.setVolume(startVolume);
         clearTrack.setVolume(0);
 
-        muffledTrack.setLooping(true);
-        clearTrack.setLooping(true);
+        muffledTrack.setLooping(defaultLooping);
+        clearTrack.setLooping(defaultLooping);
 
         muffledTrack.play();
         clearTrack.play();
