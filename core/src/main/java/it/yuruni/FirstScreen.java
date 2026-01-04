@@ -1,6 +1,7 @@
 package it.yuruni;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
@@ -34,12 +35,22 @@ public class FirstScreen implements Screen {
     private AudioEffectManager audioManager;
     private float timePassed = 0f;
 
-    Button mainButton;
+    private TextGlyph tutorialText;
+    private Button mainButton;
+    private Glyph playMenuRect;
+    private Glyph playArrow;
+    private Glyph logo;
 
     private Array<Glyph> fadeGlyphs;
     private float nextBeatTime = 0f;
     private final float beatInterval = 60f / 220f;
     private BitmapFont font;
+
+    private boolean isInMainMenu = false;
+    private float playMenuRectOriginY;
+    private float playMenuRectExtendedY;
+    private float playArrowOriginY;
+    private float playArrowExtendedY;
 
 
     @Override
@@ -90,10 +101,10 @@ public class FirstScreen implements Screen {
         downFade.setY(-200);
         fadeGlyphs = new Array<>(new Glyph[]{upFade, downFade});
 
-        Glyph playMenuRect = new Glyph(new Texture("./ui/menuRect.png"), -1000, -1000, true);
-        Glyph playArrow = new Glyph(new Texture("./ui/playButton.png"), -1000, -1000, true);
+        playMenuRect = new Glyph(new Texture("./ui/menuRect.png"), -1000, -1000, true);
+        playArrow = new Glyph(new Texture("./ui/playButton.png"), -1000, -1000, true);
 
-        Glyph logo = new Glyph(new Texture("./logo/shortLogo.png"), 323, 289 + 1000, true);
+        logo = new Glyph(new Texture("./logo/shortLogo.png"), 323, 289 + 1000, true);
         logo.setScaleX(logo.getScaleX() * 0.15f);
         logo.setScaleY(logo.getScaleY() * 0.15f);
 
@@ -103,7 +114,7 @@ public class FirstScreen implements Screen {
         parameter.size = 20;
         parameter.color = Color.WHITE;
         font = generator.generateFont(parameter);
-        TextGlyph tutorialText = new TextGlyph("Arrow keys to navigate, space to select", font, Main.WIDTH / 2f - 200, Main.HEIGHT / 2f - 400 - 500, true);
+        tutorialText = new TextGlyph("Arrow keys to navigate, space to select", font, Main.WIDTH / 2f - 200, Main.HEIGHT / 2f - 400 - 500, true);
         generator.dispose();
 
         //Button
@@ -114,7 +125,7 @@ public class FirstScreen implements Screen {
         mainButton.setScaleY(mainButton.getScaleY() * 0.15f);
         mainButton.setAlpha(0f);
         mainButton.addOnHoverListener(() -> {
-            animationManager.animateRotation(logo, -5f, 0.2f, Easing.EASE_IN_OUT_CIRC); //Do 20 for menu
+            animationManager.animateRotation(logo, -3f, 0.2f, Easing.EASE_IN_OUT_CIRC); //Do 20 for menu
         });
         mainButton.addOnUnHoverListener(() -> {
             animationManager.animateRotation(logo, 0f, 0.2f, Easing.EASE_IN_OUT_CIRC);
@@ -200,10 +211,12 @@ public class FirstScreen implements Screen {
             mainButton.setScaleY(logo.getScaleY());
             playMenuRect.setScaleX(logo.getScaleX());
             playMenuRect.setScaleY(logo.getScaleY());
-            playMenuRect.setX(logo.getX() + 100);
-            playMenuRect.setY(logo.getY() + 100);
-            playArrow.setX(logo.getX());
-            playArrow.setY(logo.getY());
+            playMenuRect.setX(logo.getX() + 6.7f);
+            playMenuRect.setY(logo.getY() + 50);
+            playArrow.setX(logo.getX() + 205);
+            playArrow.setY(logo.getY() + 150);
+            playArrow.setScaleX(playArrow.getScaleX() * 0.6f);
+            playArrow.setScaleY(playArrow.getScaleY() * 0.6f);
 
             concentration.allowCompletion();
             concentration2.allowCompletion();
@@ -213,6 +226,12 @@ public class FirstScreen implements Screen {
             monitor_on.dispose();
 
             animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() + 500, 2f, Easing.EASE_IN_OUT_EXPO);
+
+            playMenuRectOriginY = playMenuRect.getY();
+            playMenuRectExtendedY = playMenuRect.getY() + 200;
+            playArrowOriginY = playArrow.getY() + 20;
+            playArrowExtendedY = playArrow.getY() + 220;
+            isInMainMenu = true;
         }));
     }
 
@@ -235,6 +254,43 @@ public class FirstScreen implements Screen {
                 eventManager.addEvent(new Event(timePassed + 0.1f, () -> {
                     animationManager.animateFade(targetGlyph, 0f, 0.3f, Easing.EASE_IN_SINE);
                 }));
+            }
+
+            // --- up arrow key stuff ---
+            if (isInMainMenu) {
+                if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+                    if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
+                        isInMainMenu = false;
+                        animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() - 500, 1f, Easing.EASE_IN_OUT_EXPO);
+                        animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectOriginY, 0.3f, Easing.EASE_IN_OUT_QUINT);
+                        animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.5f, Easing.EASE_IN_OUT_QUINT);
+                        animationManager.animateRotation(playArrow, -0.5f, 0.5f, Easing.EASE_IN_OUT_BACK);
+                        eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
+                            animationManager.animateScale(playArrow, playArrow.getScaleX() * 20, playArrow.getScaleY() * 20, 1f, Easing.EASE_IN_OUT_BACK);
+                            animationManager.animateMove(playArrow, playArrow.getX(), playArrow.getY() - 100, 1f, Easing.EASE_IN_OUT_QUINT);
+                        }));
+                        Utils.putAfter(Main.glyphs, playArrow, logo);
+                    }
+                    if (playMenuRect.getAlpha() == 1f) {
+                        animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectExtendedY, 0.3f, Easing.EASE_IN_OUT_QUINT);
+                        animationManager.animateMove(playArrow, playArrow.getX(), playArrowExtendedY, 0.4f, Easing.EASE_IN_OUT_QUINT);
+                        animationManager.animateRotation(playArrow, 360, 0.4f, Easing.EASE_IN_OUT_EXPO);
+                        playMenuRect.setAlpha(0.98f);
+                        eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
+                            playMenuRect.setAlpha(0.99f);
+                        }));
+                    }
+                } else {
+                    if (playMenuRect.getAlpha() == 0.99f) {
+                        animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectOriginY, 0.3f, Easing.EASE_IN_OUT_QUINT);
+                        animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.4f, Easing.EASE_IN_OUT_QUINT);
+                        animationManager.animateRotation(playArrow, -360, 0.4f, Easing.EASE_IN_OUT_CIRC);
+                        playMenuRect.setAlpha(0.98f);
+                        eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
+                            playMenuRect.setAlpha(1f);
+                        }));
+                    }
+                }
             }
 
             // --- Apply camera effects ---
@@ -261,6 +317,7 @@ public class FirstScreen implements Screen {
             // --- Reset camera effects ---
             cameraManager.resetEffects();
         }
+
     @Override
     public void resize(int width, int height) {
         // If the window is minimized on a desktop (LWJGL3) platform, width and height are 0, which causes problems.

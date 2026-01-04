@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.TextureData;
 import it.yuruni.graphics.animation.Easing;
+import it.yuruni.graphics.animation.Glyph;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -166,6 +167,57 @@ public final class Utils {
             }
         }
         return wrappedText.toString().trim();
+    }
+
+    /**
+     * Moves a glyph to the position right before a target glyph in the list.
+     * The list is modified in place. If either glyph is not in the list, or parameters are null,
+     * the list is not modified.
+     *
+     * @param glyphs the list of glyphs to modify
+     * @param toMove the glyph to move
+     * @param target the glyph to be placed before
+     */
+    public static void putBefore(List<Glyph> glyphs, Glyph toMove, Glyph target) {
+        if (glyphs == null || toMove == null || target == null || toMove == target) {
+            return;
+        }
+
+        if (!glyphs.contains(toMove) || !glyphs.contains(target)) {
+            return;
+        }
+
+        glyphs.remove(toMove);
+        int targetIndex = glyphs.indexOf(target);
+        glyphs.add(targetIndex, toMove);
+    }
+
+    /**
+     * Moves a glyph to the position right after a target glyph in the list.
+     * The list is modified in place. If either glyph is not in the list, or parameters are null,
+     * the list is not modified.
+     *
+     * @param glyphs the list of glyphs to modify
+     * @param toMove the glyph to move
+     * @param target the glyph to be placed after
+     */
+    public static void putAfter(List<Glyph> glyphs, Glyph toMove, Glyph target) {
+        if (glyphs == null || toMove == null || target == null || toMove == target) {
+            return;
+        }
+
+        if (!glyphs.contains(toMove) || !glyphs.contains(target)) {
+            return;
+        }
+
+        glyphs.remove(toMove);
+        int targetIndex = glyphs.indexOf(target);
+
+        if (targetIndex == glyphs.size() - 1) {
+            glyphs.add(toMove);
+        } else {
+            glyphs.add(targetIndex + 1, toMove);
+        }
     }
 
     public static float applyEasing(float t, Easing easing) {
