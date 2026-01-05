@@ -211,7 +211,7 @@ public class FirstScreen implements Screen {
             mainButton.setScaleY(logo.getScaleY());
             playMenuRect.setScaleX(logo.getScaleX());
             playMenuRect.setScaleY(logo.getScaleY());
-            playMenuRect.setX(logo.getX() + 6.7f);
+            playMenuRect.setX(logo.getX() + 5f);
             playMenuRect.setY(logo.getY() + 50);
             playArrow.setX(logo.getX() + 205);
             playArrow.setY(logo.getY() + 150);
@@ -256,18 +256,26 @@ public class FirstScreen implements Screen {
                 }));
             }
 
-            // --- up arrow key stuff ---
+            // --- menu switching stuff ---
             if (isInMainMenu) {
                 if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-                    if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
-                        isInMainMenu = false;
+                    if (Gdx.input.isKeyPressed(Input.Keys.SPACE) && playMenuRect.getAlpha() == 0.99f) {
+                        playMenuRect.setAlpha(0.98f);
                         animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() - 500, 1f, Easing.EASE_IN_OUT_EXPO);
                         animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectOriginY, 0.3f, Easing.EASE_IN_OUT_QUINT);
                         animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.5f, Easing.EASE_IN_OUT_QUINT);
-                        animationManager.animateRotation(playArrow, -0.5f, 0.5f, Easing.EASE_IN_OUT_BACK);
+                        animationManager.animateRotation(playArrow, -5f, 0.5f, Easing.EASE_IN_OUT_BACK);
                         eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
-                            animationManager.animateScale(playArrow, playArrow.getScaleX() * 20, playArrow.getScaleY() * 20, 1f, Easing.EASE_IN_OUT_BACK);
-                            animationManager.animateMove(playArrow, playArrow.getX(), playArrow.getY() - 100, 1f, Easing.EASE_IN_OUT_QUINT);
+                            animationManager.animateMove(playArrow, playArrow.getX() - 1500, playArrow.getY(), 1f, Easing.EASE_IN_OUT_QUINT);
+                            eventManager.addEvent(new Event(timePassed + 0.2f, () -> {
+                                playMenuRect.setAlpha(0f);
+                                animationManager.animateMove(logo, -140, 670, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                mainButton.setY(670);
+                                mainButton.setX(-140);
+                                eventManager.addEvent(new Event(timePassed + 1f, () -> {
+                                    isInMainMenu = false;
+                                }));
+                            }));
                         }));
                         Utils.putAfter(Main.glyphs, playArrow, logo);
                     }
@@ -290,6 +298,25 @@ public class FirstScreen implements Screen {
                             playMenuRect.setAlpha(1f);
                         }));
                     }
+                }
+            } else {
+                if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
+                    isInMainMenu = true;
+                    animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() + 500, 1f, Easing.EASE_IN_OUT_EXPO);
+                    animationManager.animateRotation(playArrow, 0, 0.5f, Easing.EASE_IN_OUT_BACK);
+                    animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.5f, Easing.EASE_IN_OUT_QUINT);
+                    animationManager.animateMove(logo, playMenuRect.getX() - 5f, playMenuRect.getY() - 50, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    mainButton.setY(playMenuRect.getY() - 5f);
+                    mainButton.setX(playMenuRect.getX() - 50);
+                    eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
+                        animationManager.animateMove(playArrow, playArrow.getX() + 1500, playArrow.getY(), 1f, Easing.EASE_IN_OUT_QUINT);
+                        eventManager.addEvent(new Event(timePassed + 0.2f, () -> {
+                            eventManager.addEvent(new Event(timePassed + 1f, () -> {
+                                playMenuRect.setAlpha(1f);
+                            }));
+                        }));
+                    }));
+                    Utils.putBefore(Main.glyphs, playArrow, logo);
                 }
             }
 
