@@ -42,9 +42,9 @@ public class Main extends Game {
         //Cam
         camera = new OrthographicCamera();
         cameraManager = new CameraManager(camera);
-        viewport = new FitViewport(WIDTH,HEIGHT, camera);
+        viewport = new FitViewport(WIDTH, HEIGHT, camera);
 
-        setScreen(new FirstScreen());
+        setScreen(new GameplayScreen());
     }
 
     @Override
