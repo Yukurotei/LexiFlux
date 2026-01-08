@@ -40,6 +40,8 @@ public class FirstScreen implements Screen {
     private Glyph playMenuRect;
     private Glyph playArrow;
     private Glyph logo;
+    private Glyph logoLexi;
+    private Glyph logoFlux;
 
     private Array<Glyph> fadeGlyphs;
     private float nextBeatTime = 0f;
@@ -107,6 +109,13 @@ public class FirstScreen implements Screen {
         logo = new Glyph(new Texture("./logo/shortLogo.png"), 323, 289 + 1000, true);
         logo.setScaleX(logo.getScaleX() * 0.15f);
         logo.setScaleY(logo.getScaleY() * 0.15f);
+
+        logoLexi = new Glyph(new Texture("./logo/Lexi.png"), 200 - 1000, 920, true);
+        logoLexi.setScaleX(logoLexi.getScaleX() * 0.5f);
+        logoLexi.setScaleY(logoLexi.getScaleY() * 0.5f);
+        logoFlux = new Glyph(new Texture("./logo/Flux.png"), 50 - 1000, 700, true);
+        logoFlux.setScaleX(logoFlux.getScaleX() * 0.4f);
+        logoFlux.setScaleY(logoFlux.getScaleY() * 0.4f);
 
         //Some text
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/josefin-sans-latin-400-normal.ttf"));
@@ -194,6 +203,8 @@ public class FirstScreen implements Screen {
             concentration.start();
             concentration2.start();
             animationManager.animatePulse(logo, 220, 1.05f); //TODO: REPLACE WITH ACTUAL BASS DETECTION
+            animationManager.animatePulse(logoLexi, 220, 1.05f);
+            animationManager.animatePulse(logoFlux, 220, 1.05f);
             animationManager.animateFade(flash, 1f, 0.5f,Easing.EASE_IN_OUT_EXPO);
             parallaxManager.addLayer(bg, 0.02f, 0.1f);
         }));
@@ -272,6 +283,8 @@ public class FirstScreen implements Screen {
                                 animationManager.animateMove(logo, -140, 670, 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 mainButton.setY(670);
                                 mainButton.setX(-140);
+                                animationManager.animateMove(logoLexi, logoLexi.getX() + 1000, logoLexi.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                animationManager.animateMove(logoFlux, logoFlux.getX() + 1000, logoFlux.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 eventManager.addEvent(new Event(timePassed + 1f, () -> {
                                     isInMainMenu = false;
                                 }));
@@ -310,6 +323,8 @@ public class FirstScreen implements Screen {
                     mainButton.setX(playMenuRect.getX() - 50);
                     eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
                         animationManager.animateMove(playArrow, playArrow.getX() + 1500, playArrow.getY(), 1f, Easing.EASE_IN_OUT_QUINT);
+                        animationManager.animateMove(logoLexi, logoLexi.getX() - 1000, logoLexi.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
+                        animationManager.animateMove(logoFlux, logoFlux.getX() - 1000, logoFlux.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
                         eventManager.addEvent(new Event(timePassed + 0.2f, () -> {
                             eventManager.addEvent(new Event(timePassed + 1f, () -> {
                                 playMenuRect.setAlpha(1f);
