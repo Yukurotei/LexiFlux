@@ -14,12 +14,15 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import it.yuruni.audio.AudioEffectManager;
 
+import it.yuruni.graphics.Easing;
 import it.yuruni.graphics.animation.*;
 
 import it.yuruni.graphics.effects.CameraManager;
 import it.yuruni.graphics.effects.ParallaxManager;
 import it.yuruni.graphics.effects.ShaderManager;
 import it.yuruni.graphics.effects.YParticleEffect;
+import it.yuruni.graphics.element.Glyph;
+import it.yuruni.graphics.element.TextGlyph;
 import it.yuruni.ui.Button;
 
 

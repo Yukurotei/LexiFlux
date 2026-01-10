@@ -1,4 +1,4 @@
-package it.yuruni.graphics.animation;
+package it.yuruni.graphics.element;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;

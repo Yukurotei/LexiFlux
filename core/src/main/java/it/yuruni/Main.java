@@ -7,7 +7,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import it.yuruni.graphics.animation.AnimationManager;
 import it.yuruni.graphics.animation.EventManager;
-import it.yuruni.graphics.animation.Glyph;
+import it.yuruni.graphics.element.Glyph;
 import it.yuruni.graphics.effects.CameraManager;
 import it.yuruni.graphics.effects.ParallaxManager;
 import it.yuruni.graphics.effects.ShaderManager;

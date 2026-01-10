@@ -3,13 +3,9 @@ package it.yuruni;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.TextureData;
-import it.yuruni.graphics.animation.Easing;
-import it.yuruni.graphics.animation.Glyph;
+import it.yuruni.graphics.Easing;
+import it.yuruni.graphics.element.Glyph;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.*;
 
 public final class Utils {

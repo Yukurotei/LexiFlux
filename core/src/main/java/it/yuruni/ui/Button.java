@@ -5,9 +5,8 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
 import it.yuruni.Main;
-import it.yuruni.graphics.animation.Glyph;
+import it.yuruni.graphics.element.Glyph;
 
 
 public class Button extends Glyph {

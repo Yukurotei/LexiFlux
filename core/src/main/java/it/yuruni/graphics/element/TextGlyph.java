@@ -1,10 +1,9 @@
-package it.yuruni.graphics.animation;
+package it.yuruni.graphics.element;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import it.yuruni.Main;
 
 public class TextGlyph extends Glyph {
     private String text;

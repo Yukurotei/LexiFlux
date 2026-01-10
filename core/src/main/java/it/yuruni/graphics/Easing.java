@@ -1,4 +1,4 @@
-package it.yuruni.graphics.animation;
+package it.yuruni.graphics;
 
 public enum Easing {
     LINEAR,

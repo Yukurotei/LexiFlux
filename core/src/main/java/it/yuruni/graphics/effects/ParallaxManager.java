@@ -5,7 +5,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import it.yuruni.Main;
-import it.yuruni.graphics.animation.Glyph;
+import it.yuruni.graphics.element.Glyph;
 
 public class ParallaxManager {
 

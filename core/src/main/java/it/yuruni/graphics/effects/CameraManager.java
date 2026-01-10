@@ -5,7 +5,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 import it.yuruni.Utils;
-import it.yuruni.graphics.animation.Easing;
+import it.yuruni.graphics.Easing;
 
 public class CameraManager {
     private final OrthographicCamera camera;

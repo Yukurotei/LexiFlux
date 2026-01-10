@@ -5,7 +5,8 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 import it.yuruni.Main;
 import it.yuruni.Utils;
-import it.yuruni.graphics.animation.Easing;
+import it.yuruni.graphics.Easing;
+import it.yuruni.graphics.element.Glyph;
 
 public class AnimationManager {
 
