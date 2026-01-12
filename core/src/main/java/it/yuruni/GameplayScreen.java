@@ -1,6 +1,7 @@
 package it.yuruni;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -16,11 +17,13 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import it.yuruni.graphics.effects.CameraManager;
 import it.yuruni.graphics.element.Glyph3D;
 
 public class GameplayScreen implements Screen {
-    private CameraInputController controller;
+    private CameraInputController controller; //TODO: TEMPORARY, REMOVE
     private PerspectiveCamera cam;
+    private CameraManager cameraManager;
     private ModelBatch modelBatch;
     private DecalBatch decalBatch;
     private Viewport viewport;
@@ -38,7 +41,7 @@ public class GameplayScreen implements Screen {
     public void show() {
         // --- Camera Setup ---
         cam = new PerspectiveCamera(67, Main.WIDTH, Main.HEIGHT);
-        cam.position.set(Main.WIDTH / 2f, Main.HEIGHT / 2f, 800f);
+        cam.position.set(Main.WIDTH / 2f, Main.HEIGHT / 2f, 1000f);
         cam.lookAt(Main.WIDTH / 2f, Main.HEIGHT / 2f, 0f);
         cam.near = 1f;
         cam.far = 5000f;
@@ -46,6 +49,7 @@ public class GameplayScreen implements Screen {
 
         controller = new CameraInputController(cam);
         Gdx.input.setInputProcessor(controller);
+        cameraManager = new CameraManager(cam);
 
         // --- Batches and Viewport Setup ---
         modelBatch = new ModelBatch();
@@ -91,7 +95,17 @@ public class GameplayScreen implements Screen {
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
         cam.update();
+        cameraManager.update(delta);
         controller.update();
+
+        cameraManager.applyEffects();
+
+        // Camera offset when arrow key
+        if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+
+        } else {
+
+        }
 
         // Spin the cube
         cubeInstance.transform.rotate(Vector3.Y, 45 * delta);
@@ -104,6 +118,8 @@ public class GameplayScreen implements Screen {
         modelBatch.begin(cam);
         modelBatch.render(cubeInstance);
         modelBatch.end();
+
+        cameraManager.resetEffects();
     }
 
     @Override
