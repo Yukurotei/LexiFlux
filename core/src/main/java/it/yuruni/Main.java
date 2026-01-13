@@ -31,6 +31,8 @@ public class Main extends Game {
     public static Viewport viewport;
     public static final float WIDTH = 1920, HEIGHT = 1080;
 
+    public static float timePassed = 0f;
+
 
     @Override
     public void create() {
@@ -49,6 +51,8 @@ public class Main extends Game {
 
     @Override
     public void render() {
+        timePassed += Gdx.graphics.getDeltaTime();
+        eventManager.update(timePassed);
         animationManager.update(Gdx.graphics.getDeltaTime());
         super.render();
     }

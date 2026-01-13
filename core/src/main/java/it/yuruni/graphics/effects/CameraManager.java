@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Quaternion;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
@@ -39,9 +40,6 @@ public class CameraManager {
     };
 
     private float currentRotation = 0f;
-
-    // 3D-specific rotation tracking
-    private final Vector3 currentEulerRotation = new Vector3(); // pitch, yaw, roll
 
     // 2D Constructor (backward compatible)
     public CameraManager(OrthographicCamera camera) {
@@ -109,9 +107,10 @@ public class CameraManager {
         }
         clearRotationAnimations();
 
+        Quaternion endQ = new Quaternion().setEulerAngles(yaw, pitch, roll);
+
         CameraAnimation anim = rotationAnimationPool.obtain();
-        anim.init3D(currentEulerRotation.x, currentEulerRotation.y, currentEulerRotation.z,
-            pitch, yaw, roll, durationMillis / 1000f, easing);
+        anim.init3D(camera.rotation.cpy(), endQ, durationMillis / 1000f, easing);
         rotationAnimations.add(anim);
     }
 
@@ -125,12 +124,12 @@ public class CameraManager {
         }
         clearRotationAnimations();
 
+        Quaternion startQ = camera.rotation.cpy();
+        Quaternion rotationDeltaQ = new Quaternion().setEulerAngles(yawDelta, pitchDelta, rollDelta);
+        Quaternion endQ = startQ.cpy().mul(rotationDeltaQ);
+
         CameraAnimation anim = rotationAnimationPool.obtain();
-        anim.init3D(currentEulerRotation.x, currentEulerRotation.y, currentEulerRotation.z,
-            currentEulerRotation.x + pitchDelta,
-            currentEulerRotation.y + yawDelta,
-            currentEulerRotation.z + rollDelta,
-            durationMillis / 1000f, easing);
+        anim.init3D(startQ, endQ, durationMillis / 1000f, easing);
         rotationAnimations.add(anim);
     }
 
@@ -281,24 +280,11 @@ public class CameraManager {
                 rotationAnimations.removeIndex(i);
                 rotationAnimationPool.free(anim);
             } else {
+                anim.update(delta);
                 if (is3D) {
-                    Vector3 lastRot = new Vector3(anim.getCurrentRotation3D());
-                    anim.update(delta);
-                    Vector3 newRot = anim.getCurrentRotation3D();
-
-                    // Calculate delta and apply rotation
-                    float pitchDelta = newRot.x - lastRot.x;
-                    float yawDelta = newRot.y - lastRot.y;
-                    float rollDelta = newRot.z - lastRot.z;
-
-                    camera.direction.rotate(camera.up, yawDelta);
-                    camera.direction.rotate(camera.direction.cpy().crs(camera.up).nor(), pitchDelta);
-                    camera.up.rotate(camera.direction, rollDelta);
-
-                    currentEulerRotation.set(newRot);
+                    camera.rotation.set(anim.getCurrentRotationQ());
                 } else {
-                    float lastRotation = anim.getCurrentRotation2D();
-                    anim.update(delta);
+                    float lastRotation = currentRotation;
                     float newRotation = anim.getCurrentRotation2D();
                     float diff = newRotation - lastRotation;
                     ((OrthographicCamera) camera).rotate(diff);
@@ -306,7 +292,7 @@ public class CameraManager {
                 }
             }
         }
-        camera.update();
+        // No camera.update() here, it should be done once per frame after all updates
     }
 
     private void updatePosition(float delta) {
@@ -349,10 +335,11 @@ public class CameraManager {
         private float startRotation, toRotation;
         private float currentRotation;
 
-        // 3D rotation (euler angles: pitch, yaw, roll)
-        private final Vector3 startRotation3D = new Vector3();
-        private final Vector3 toRotation3D = new Vector3();
-        private final Vector3 currentRotation3D = new Vector3();
+        // 3D rotation (quaternions)
+        private final Quaternion startRotQ = new Quaternion();
+        private final Quaternion toRotQ = new Quaternion();
+        private final Quaternion currentRotQ = new Quaternion();
+
 
         public void init2D(float startRotation, float toRotation, float durationSeconds, Easing easing) {
             this.is3D = false;
@@ -364,16 +351,14 @@ public class CameraManager {
             this.currentRotation = startRotation;
         }
 
-        public void init3D(float startPitch, float startYaw, float startRoll,
-                           float toPitch, float toYaw, float toRoll,
-                           float durationSeconds, Easing easing) {
+        public void init3D(Quaternion start, Quaternion end, float durationSeconds, Easing easing) {
             this.is3D = true;
-            this.startRotation3D.set(startPitch, startYaw, startRoll);
-            this.toRotation3D.set(toPitch, toYaw, toRoll);
+            this.startRotQ.set(start);
+            this.toRotQ.set(end);
             this.duration = durationSeconds;
             this.easing = easing;
             this.time = 0;
-            this.currentRotation3D.set(startRotation3D);
+            this.currentRotQ.set(startRotQ);
         }
 
         public void update(float delta) {
@@ -384,9 +369,7 @@ public class CameraManager {
             float easedProgress = Utils.applyEasing(progress, this.easing);
 
             if (is3D) {
-                currentRotation3D.x = startRotation3D.x + (toRotation3D.x - startRotation3D.x) * easedProgress;
-                currentRotation3D.y = startRotation3D.y + (toRotation3D.y - startRotation3D.y) * easedProgress;
-                currentRotation3D.z = startRotation3D.z + (toRotation3D.z - startRotation3D.z) * easedProgress;
+                currentRotQ.set(startRotQ).slerp(toRotQ, easedProgress);
             } else {
                 currentRotation = startRotation + (toRotation - startRotation) * easedProgress;
             }
@@ -396,8 +379,8 @@ public class CameraManager {
             return currentRotation;
         }
 
-        public Vector3 getCurrentRotation3D() {
-            return currentRotation3D;
+        public Quaternion getCurrentRotationQ() {
+            return currentRotQ;
         }
 
         public boolean isFinished() {
@@ -410,9 +393,9 @@ public class CameraManager {
             easing = Easing.LINEAR;
             duration = time = 0;
             startRotation = toRotation = currentRotation = 0;
-            startRotation3D.set(0, 0, 0);
-            toRotation3D.set(0, 0, 0);
-            currentRotation3D.set(0, 0, 0);
+            startRotQ.idt();
+            toRotQ.idt();
+            currentRotQ.idt();
         }
     }
 

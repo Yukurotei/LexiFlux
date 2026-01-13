@@ -17,6 +17,9 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import it.yuruni.graphics.Easing;
+import it.yuruni.graphics.animation.Event;
+import it.yuruni.graphics.animation.EventManager;
 import it.yuruni.graphics.effects.CameraManager;
 import it.yuruni.graphics.element.Glyph3D;
 
@@ -36,9 +39,15 @@ public class GameplayScreen implements Screen {
     private Texture noteTexture;
     private Texture overlayTexture;
 
+    // --- Variables ---
+    private final EventManager eventManager = Main.eventManager;
+    private final float timePassed = Main.timePassed;
+    private boolean isCameraOffset, isInTransition;
+
 
     @Override
     public void show() {
+        isCameraOffset = isInTransition = false;
         // --- Camera Setup ---
         cam = new PerspectiveCamera(67, Main.WIDTH, Main.HEIGHT);
         cam.position.set(Main.WIDTH / 2f, Main.HEIGHT / 2f, 1000f);
@@ -102,10 +111,25 @@ public class GameplayScreen implements Screen {
 
         // Camera offset when arrow key
         if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-
+            if (!isCameraOffset && !isInTransition) {
+                isCameraOffset = true;
+                isInTransition = true;
+                cameraManager.setPosition3D(Main.WIDTH / 2f, Main.HEIGHT / 2f + 100, 1000f, 0.4f, Easing.EASE_IN_OUT_QUAD);
+                eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
+                    isInTransition = false;
+                }));
+            }
         } else {
-
+            if (isCameraOffset && !isInTransition) {
+                isInTransition = true;
+                cameraManager.setPosition3D(Main.WIDTH / 2f, Main.HEIGHT / 2f, 1000f, 0.4f, Easing.EASE_IN_OUT_QUAD);
+                eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
+                    isCameraOffset = false;
+                    isInTransition = false;
+                }));
+            }
         }
+
 
         // Spin the cube
         cubeInstance.transform.rotate(Vector3.Y, 45 * delta);

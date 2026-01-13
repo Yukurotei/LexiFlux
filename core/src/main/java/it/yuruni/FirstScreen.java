@@ -36,7 +36,7 @@ public class FirstScreen implements Screen {
     private final ShaderManager shaderManager = Main.shaderManager;
     private final EventManager eventManager = Main.eventManager;
     private AudioEffectManager audioManager;
-    private float timePassed = 0f;
+    private final float timePassed = Main.timePassed;
 
     private TextGlyph tutorialText;
     private Button mainButton;
@@ -252,8 +252,6 @@ public class FirstScreen implements Screen {
         @Override
         public void render(float delta) {
             // --- Update logic ---
-            timePassed += delta;
-            eventManager.update(timePassed);
             audioManager.update(delta);
             cameraManager.update(delta);
             parallaxManager.update(delta);
