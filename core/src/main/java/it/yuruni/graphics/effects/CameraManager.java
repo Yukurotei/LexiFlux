@@ -21,7 +21,7 @@ public class CameraManager {
     private float intervalTimer = 0f;
     private float currentShakeX = 0f;
     private float currentShakeY = 0f;
-    private float currentShakeZ = 0f; // For 3D shake
+    private float currentShakeZ = 0f;
 
     private final Array<CameraAnimation> rotationAnimations = new Array<>();
     private final Pool<CameraAnimation> rotationAnimationPool = new Pool<CameraAnimation>() {
@@ -41,6 +41,11 @@ public class CameraManager {
 
     private float currentRotation = 0f;
 
+    // Track 3D camera orientation using quaternion
+    private final Quaternion currentRotationQ = new Quaternion();
+    private final Vector3 tempDir = new Vector3();
+    private final Vector3 tempUp = new Vector3();
+
     // 2D Constructor (backward compatible)
     public CameraManager(OrthographicCamera camera) {
         this.camera = camera;
@@ -51,6 +56,14 @@ public class CameraManager {
     public CameraManager(PerspectiveCamera camera) {
         this.camera = camera;
         this.is3D = true;
+        // Initialize quaternion from camera's current orientation
+        currentRotationQ.setFromAxes(
+            camera.direction.cpy().crs(camera.up).nor().x,
+            camera.direction.cpy().crs(camera.up).nor().y,
+            camera.direction.cpy().crs(camera.up).nor().z,
+            camera.up.x, camera.up.y, camera.up.z,
+            camera.direction.x, camera.direction.y, camera.direction.z
+        );
     }
 
     /**
@@ -58,50 +71,53 @@ public class CameraManager {
      *
      * @param duration       How long the shake should last, in seconds.
      * @param intensity      The maximum pixel offset of the shake.
-     * @param intervalMillis The time between shake position changes, in milliseconds.
+     * @param interval       The time between shake position changes, in seconds.
      */
-    public void shake(float duration, float intensity, float intervalMillis) {
+    public void shake(float duration, float intensity, float interval) {
         this.shakeTimer = duration;
         this.shakeIntensity = intensity;
-        this.shakeInterval = intervalMillis / 1000f;
+        this.shakeInterval = interval;
         this.intervalTimer = 0;
     }
 
     /**
      * 2D ONLY: Animates the camera's rotation TO a specific angle.
      * Any existing rotation animation will be stopped.
+     * @param duration Duration in seconds.
      */
-    public void setRotation(float degrees, float durationMillis, Easing easing) {
+    public void setRotation(float degrees, float duration, Easing easing) {
         if (is3D) {
             throw new UnsupportedOperationException("Use setRotation3D for 3D cameras");
         }
         clearRotationAnimations();
 
         CameraAnimation anim = rotationAnimationPool.obtain();
-        anim.init2D(currentRotation, degrees, durationMillis / 1000f, easing);
+        anim.init2D(currentRotation, degrees, duration, easing);
         rotationAnimations.add(anim);
     }
 
     /**
      * 2D ONLY: Animates the camera's rotation BY a relative angle.
      * Any existing rotation animation will be stopped.
+     * @param duration Duration in seconds.
      */
-    public void rotate(float degrees, float durationMillis, Easing easing) {
+    public void rotate(float degrees, float duration, Easing easing) {
         if (is3D) {
             throw new UnsupportedOperationException("Use rotate3D for 3D cameras");
         }
         clearRotationAnimations();
 
         CameraAnimation anim = rotationAnimationPool.obtain();
-        anim.init2D(currentRotation, currentRotation + degrees, durationMillis / 1000f, easing);
+        anim.init2D(currentRotation, currentRotation + degrees, duration, easing);
         rotationAnimations.add(anim);
     }
 
     /**
      * 3D ONLY: Animates the camera's rotation TO specific euler angles (pitch, yaw, roll).
      * Any existing rotation animation will be stopped.
+     * @param duration Duration in seconds.
      */
-    public void setRotation3D(float pitch, float yaw, float roll, float durationMillis, Easing easing) {
+    public void setRotation3D(float pitch, float yaw, float roll, float duration, Easing easing) {
         if (!is3D) {
             throw new UnsupportedOperationException("Use setRotation for 2D cameras");
         }
@@ -110,49 +126,52 @@ public class CameraManager {
         Quaternion endQ = new Quaternion().setEulerAngles(yaw, pitch, roll);
 
         CameraAnimation anim = rotationAnimationPool.obtain();
-        anim.init3D(camera.rotation.cpy(), endQ, durationMillis / 1000f, easing);
+        anim.init3D(currentRotationQ.cpy(), endQ, duration, easing);
         rotationAnimations.add(anim);
     }
 
     /**
      * 3D ONLY: Animates the camera's rotation BY relative euler angles (pitch, yaw, roll).
      * Any existing rotation animation will be stopped.
+     * @param duration Duration in seconds.
      */
-    public void rotate3D(float pitchDelta, float yawDelta, float rollDelta, float durationMillis, Easing easing) {
+    public void rotate3D(float pitchDelta, float yawDelta, float rollDelta, float duration, Easing easing) {
         if (!is3D) {
             throw new UnsupportedOperationException("Use rotate for 2D cameras");
         }
         clearRotationAnimations();
 
-        Quaternion startQ = camera.rotation.cpy();
+        Quaternion startQ = currentRotationQ.cpy();
         Quaternion rotationDeltaQ = new Quaternion().setEulerAngles(yawDelta, pitchDelta, rollDelta);
         Quaternion endQ = startQ.cpy().mul(rotationDeltaQ);
 
         CameraAnimation anim = rotationAnimationPool.obtain();
-        anim.init3D(startQ, endQ, durationMillis / 1000f, easing);
+        anim.init3D(startQ, endQ, duration, easing);
         rotationAnimations.add(anim);
     }
 
     /**
      * 2D ONLY: Animates the camera position TO specific coordinates.
      * Any existing position animation will be stopped.
+     * @param duration Duration in seconds.
      */
-    public void setPosition(float x, float y, float durationMillis, Easing easing) {
+    public void setPosition(float x, float y, float duration, Easing easing) {
         if (is3D) {
             throw new UnsupportedOperationException("Use setPosition3D for 3D cameras");
         }
         clearPositionAnimations();
 
         CameraPositionAnimation anim = positionAnimationPool.obtain();
-        anim.init2D(camera.position.x, camera.position.y, x, y, durationMillis / 1000f, easing);
+        anim.init2D(camera.position.x, camera.position.y, x, y, duration, easing);
         positionAnimations.add(anim);
     }
 
     /**
      * 2D ONLY: Animates the camera position BY a relative offset.
      * Any existing position animation will be stopped.
+     * @param duration Duration in seconds.
      */
-    public void moveTo(float dx, float dy, float durationMillis, Easing easing) {
+    public void moveTo(float dx, float dy, float duration, Easing easing) {
         if (is3D) {
             throw new UnsupportedOperationException("Use moveTo3D for 3D cameras");
         }
@@ -161,15 +180,16 @@ public class CameraManager {
         CameraPositionAnimation anim = positionAnimationPool.obtain();
         anim.init2D(camera.position.x, camera.position.y,
             camera.position.x + dx, camera.position.y + dy,
-            durationMillis / 1000f, easing);
+            duration, easing);
         positionAnimations.add(anim);
     }
 
     /**
      * 3D ONLY: Animates the camera position TO specific coordinates.
      * Any existing position animation will be stopped.
+     * @param duration Duration in seconds.
      */
-    public void setPosition3D(float x, float y, float z, float durationMillis, Easing easing) {
+    public void setPosition3D(float x, float y, float z, float duration, Easing easing) {
         if (!is3D) {
             throw new UnsupportedOperationException("Use setPosition for 2D cameras");
         }
@@ -177,15 +197,16 @@ public class CameraManager {
 
         CameraPositionAnimation anim = positionAnimationPool.obtain();
         anim.init3D(camera.position.x, camera.position.y, camera.position.z,
-            x, y, z, durationMillis / 1000f, easing);
+            x, y, z, duration, easing);
         positionAnimations.add(anim);
     }
 
     /**
      * 3D ONLY: Animates the camera position BY a relative offset.
      * Any existing position animation will be stopped.
+     * @param duration Duration in seconds.
      */
-    public void moveTo3D(float dx, float dy, float dz, float durationMillis, Easing easing) {
+    public void moveTo3D(float dx, float dy, float dz, float duration, Easing easing) {
         if (!is3D) {
             throw new UnsupportedOperationException("Use moveTo for 2D cameras");
         }
@@ -194,7 +215,7 @@ public class CameraManager {
         CameraPositionAnimation anim = positionAnimationPool.obtain();
         anim.init3D(camera.position.x, camera.position.y, camera.position.z,
             camera.position.x + dx, camera.position.y + dy, camera.position.z + dz,
-            durationMillis / 1000f, easing);
+            duration, easing);
         positionAnimations.add(anim);
     }
 
@@ -229,7 +250,7 @@ public class CameraManager {
         if (is3D) {
             camera.translate(currentShakeX, currentShakeY, currentShakeZ);
         } else {
-            ((OrthographicCamera) camera).translate(currentShakeX, currentShakeY);
+            ((OrthographicCamera)camera).translate(currentShakeX, currentShakeY);
         }
         camera.update();
     }
@@ -242,7 +263,7 @@ public class CameraManager {
         if (is3D) {
             camera.translate(-currentShakeX, -currentShakeY, -currentShakeZ);
         } else {
-            ((OrthographicCamera) camera).translate(-currentShakeX, -currentShakeY);
+            ((OrthographicCamera)camera).translate(-currentShakeX, -currentShakeY);
         }
         camera.update();
     }
@@ -282,17 +303,27 @@ public class CameraManager {
             } else {
                 anim.update(delta);
                 if (is3D) {
-                    camera.rotation.set(anim.getCurrentRotationQ());
+                    // Update tracked quaternion
+                    currentRotationQ.set(anim.getCurrentRotationQ());
+
+                    // Apply quaternion to camera orientation
+                    tempDir.set(0, 0, -1);
+                    tempUp.set(0, 1, 0);
+                    currentRotationQ.transform(tempDir);
+                    currentRotationQ.transform(tempUp);
+
+                    camera.direction.set(tempDir);
+                    camera.up.set(tempUp);
                 } else {
                     float lastRotation = currentRotation;
                     float newRotation = anim.getCurrentRotation2D();
                     float diff = newRotation - lastRotation;
-                    ((OrthographicCamera) camera).rotate(diff);
+                    ((OrthographicCamera)camera).rotate(diff);
                     currentRotation = newRotation;
                 }
             }
         }
-        // No camera.update() here, it should be done once per frame after all updates
+        camera.update();
     }
 
     private void updatePosition(float delta) {
@@ -339,7 +370,6 @@ public class CameraManager {
         private final Quaternion startRotQ = new Quaternion();
         private final Quaternion toRotQ = new Quaternion();
         private final Quaternion currentRotQ = new Quaternion();
-
 
         public void init2D(float startRotation, float toRotation, float durationSeconds, Easing easing) {
             this.is3D = false;
@@ -410,7 +440,7 @@ public class CameraManager {
         private final Vector3 toPosition2D = new Vector3();
         private final Vector3 currentPosition2D = new Vector3();
 
-        // 3D position (reusing same vectors)
+        // 3D position
         private final Vector3 startPosition3D = new Vector3();
         private final Vector3 toPosition3D = new Vector3();
         private final Vector3 currentPosition3D = new Vector3();

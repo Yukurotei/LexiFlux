@@ -41,8 +41,8 @@ public class GameplayScreen implements Screen {
 
     // --- Variables ---
     private final EventManager eventManager = Main.eventManager;
-    private final float timePassed = Main.timePassed;
     private boolean isCameraOffset, isInTransition;
+    private float cameraShiftDelay = 0.1f;
 
 
     @Override
@@ -109,21 +109,47 @@ public class GameplayScreen implements Screen {
 
         cameraManager.applyEffects();
 
-        // Camera offset when arrow key
+        // Camera offset when arrow keys are pressed
+        float targetCamX = Main.WIDTH / 2f;
+        float targetCamY = Main.HEIGHT / 2f;
+        final float targetCamZ = 1000f; // Z always stays 1000f
+
+        final float offsetAmount = 30f; // Define the offset magnitude
+
+        boolean anyArrowKeyPressed = false;
+
         if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            if (!isCameraOffset && !isInTransition) {
+            targetCamY += offsetAmount;
+            anyArrowKeyPressed = true;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+            targetCamY -= offsetAmount;
+            anyArrowKeyPressed = true;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+            targetCamX -= offsetAmount;
+            anyArrowKeyPressed = true;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+            targetCamX += offsetAmount;
+            anyArrowKeyPressed = true;
+        }
+
+        if (anyArrowKeyPressed) {
+            if (!isInTransition && (cam.position.x != targetCamX || cam.position.y != targetCamY)) {
                 isCameraOffset = true;
                 isInTransition = true;
-                cameraManager.setPosition3D(Main.WIDTH / 2f, Main.HEIGHT / 2f + 100, 1000f, 0.4f, Easing.EASE_IN_OUT_QUAD);
-                eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
+                cameraManager.setPosition3D(targetCamX, targetCamY, targetCamZ, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
+                eventManager.addEvent(new Event(Main.timePassed + cameraShiftDelay, () -> {
                     isInTransition = false;
                 }));
             }
         } else {
+            // Return to original position if no arrow keys are pressed and camera was offset
             if (isCameraOffset && !isInTransition) {
                 isInTransition = true;
-                cameraManager.setPosition3D(Main.WIDTH / 2f, Main.HEIGHT / 2f, 1000f, 0.4f, Easing.EASE_IN_OUT_QUAD);
-                eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
+                cameraManager.setPosition3D(Main.WIDTH / 2f, Main.HEIGHT / 2f, 1000f, 0.2f, Easing.EASE_IN_OUT_QUAD);
+                eventManager.addEvent(new Event(Main.timePassed + cameraShiftDelay, () -> {
                     isCameraOffset = false;
                     isInTransition = false;
                 }));
