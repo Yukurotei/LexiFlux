@@ -8,7 +8,7 @@ import com.badlogic.gdx.math.Quaternion;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
-import it.yuruni.Utils;
+import it.yuruni.utils.ElementUtils;
 import it.yuruni.graphics.Easing;
 
 public class CameraManager {
@@ -396,7 +396,7 @@ public class CameraManager {
             time = Math.min(duration, time + delta);
 
             float progress = (duration == 0) ? 1f : time / duration;
-            float easedProgress = Utils.applyEasing(progress, this.easing);
+            float easedProgress = ElementUtils.applyEasing(progress, this.easing);
 
             if (is3D) {
                 currentRotQ.set(startRotQ).slerp(toRotQ, easedProgress);
@@ -473,7 +473,7 @@ public class CameraManager {
             time = Math.min(duration, time + delta);
 
             float progress = (duration == 0) ? 1f : time / duration;
-            float easedProgress = Utils.applyEasing(progress, this.easing);
+            float easedProgress = ElementUtils.applyEasing(progress, this.easing);
 
             if (is3D) {
                 currentPosition3D.x = startPosition3D.x + (toPosition3D.x - startPosition3D.x) * easedProgress;

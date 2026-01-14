@@ -18,6 +18,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import it.yuruni.graphics.Easing;
+import it.yuruni.graphics.animation.AnimationManager;
 import it.yuruni.graphics.animation.Event;
 import it.yuruni.graphics.animation.EventManager;
 import it.yuruni.graphics.effects.CameraManager;
@@ -31,6 +32,9 @@ public class GameplayScreen implements Screen {
     private DecalBatch decalBatch;
     private Viewport viewport;
 
+    // --- static imports from Main ---
+    private AnimationManager animationManager = Main.animationManager;
+
     // --- 3D Objects ---
     private Model cubeModel;
     private ModelInstance cubeInstance;
@@ -38,12 +42,15 @@ public class GameplayScreen implements Screen {
     // --- Textures (owned by the screen) ---
     private Texture noteTexture;
     private Texture overlayTexture;
-    private Texture leftArrowCover;
-    private Texture rightArrowCover;
-    private Texture upArrowCover;
-    private Texture downArrowCover;
+
+    // --- Elements ---
+    private Glyph3D leftArrowCover;
+    private Glyph3D rightArrowCover;
+    private Glyph3D upArrowCover;
+    private Glyph3D downArrowCover;
 
     // --- Variables ---
+    private int arrowKeyState;
     private final EventManager eventManager = Main.eventManager;
     private boolean isCameraOffset, isInTransition;
     private final float cameraShiftDelay = 0.1f;
@@ -84,7 +91,7 @@ public class GameplayScreen implements Screen {
         overlay.dimension.set(Main.WIDTH, Main.HEIGHT);
 
         // Create Overlay Covers
-
+        upArrowCover = new Glyph3D(new Texture("upArrowCover.png"), new Vector3(Main.WIDTH / 2f, Main.HEIGHT / 2f + 267, 99f), true);
 
         // Create Notes
         float noteSize = 100f;
@@ -129,18 +136,22 @@ public class GameplayScreen implements Screen {
         if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
             targetCamY += offsetAmount;
             anyArrowKeyPressed = true;
+            arrowKeyState = Input.Keys.UP;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
             targetCamY -= offsetAmount;
             anyArrowKeyPressed = true;
+            arrowKeyState = Input.Keys.DOWN;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
             targetCamX -= offsetAmount;
             anyArrowKeyPressed = true;
+            arrowKeyState = Input.Keys.LEFT;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
             targetCamX += offsetAmount;
             anyArrowKeyPressed = true;
+            arrowKeyState = Input.Keys.RIGHT;
         }
 
         if (anyArrowKeyPressed) {
@@ -148,15 +159,20 @@ public class GameplayScreen implements Screen {
                 isCameraOffset = true;
                 isInTransition = true;
                 cameraManager.setPosition3D(targetCamX, targetCamY, targetCamZ, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
+                if (arrowKeyState == Input.Keys.UP) {
+                    animationManager.animateFade(upArrowCover, 0.1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
+                } else {
+                    animationManager.animateFade(upArrowCover, 1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
+                }
                 eventManager.addEvent(new Event(Main.timePassed + cameraShiftDelay, () -> {
                     isInTransition = false;
                 }));
             }
         } else {
-            // Return to original position if no arrow keys are pressed and camera was offset
             if (isCameraOffset && !isInTransition) {
                 isInTransition = true;
                 cameraManager.setPosition3D(Main.WIDTH / 2f, Main.HEIGHT / 2f, 1000f, 0.2f, Easing.EASE_IN_OUT_QUAD);
+                animationManager.animateFade(upArrowCover, 1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
                 eventManager.addEvent(new Event(Main.timePassed + cameraShiftDelay, () -> {
                     isCameraOffset = false;
                     isInTransition = false;

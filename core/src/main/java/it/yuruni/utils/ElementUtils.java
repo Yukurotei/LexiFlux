@@ -1,4 +1,4 @@
-package it.yuruni;
+package it.yuruni.utils;
 
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -8,7 +8,7 @@ import it.yuruni.graphics.element.Glyph;
 
 import java.util.*;
 
-public final class Utils {
+public final class ElementUtils {
     /**
      *
      * @param sourceTexture the original texture to be resized

@@ -24,6 +24,7 @@ import it.yuruni.graphics.effects.YParticleEffect;
 import it.yuruni.graphics.element.Glyph;
 import it.yuruni.graphics.element.TextGlyph;
 import it.yuruni.ui.Button;
+import it.yuruni.utils.ElementUtils;
 
 
 /** First screen of the application. Displayed after the application is created. */
@@ -78,7 +79,7 @@ public class FirstScreen implements Screen {
         concentration2.scaleEffect(3);
 
         //Textures
-        Glyph bg = new Glyph(Utils.resizeTo(new Texture("./sampleBGs/bg.png"), 120), -192, -108, true);
+        Glyph bg = new Glyph(ElementUtils.resizeTo(new Texture("./sampleBGs/bg.png"), 120), -192, -108, true);
         bg.setAlpha(0f);
 
         Glyph glyph = new Glyph(new Texture("./logo/LogoLayout.png"), 0, 0, true);
@@ -101,7 +102,7 @@ public class FirstScreen implements Screen {
 
         Glyph upFade = new Glyph(new Texture("./upwardsFade.png"), 0, 200, true);
         upFade.setAlpha(0f);
-        Glyph downFade = new Glyph(Utils.rotateTextureRightAngles(new Texture("./upwardsFade.png"), 180), 0, 200, true);
+        Glyph downFade = new Glyph(ElementUtils.rotateTextureRightAngles(new Texture("./upwardsFade.png"), 180), 0, 200, true);
         downFade.setAlpha(0f);
         downFade.setY(-200);
         fadeGlyphs = new Array<>(new Glyph[]{upFade, downFade});
@@ -291,7 +292,7 @@ public class FirstScreen implements Screen {
                                 }));
                             }));
                         }));
-                        Utils.putAfter(Main.glyphs, playArrow, logo);
+                        ElementUtils.putAfter(Main.glyphs, playArrow, logo);
                     }
                     if (playMenuRect.getAlpha() == 1f) {
                         animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectExtendedY, 0.3f, Easing.EASE_IN_OUT_QUINT);
@@ -332,7 +333,7 @@ public class FirstScreen implements Screen {
                             }));
                         }));
                     }));
-                    Utils.putBefore(Main.glyphs, playArrow, logo);
+                    ElementUtils.putBefore(Main.glyphs, playArrow, logo);
                 }
             }
 
