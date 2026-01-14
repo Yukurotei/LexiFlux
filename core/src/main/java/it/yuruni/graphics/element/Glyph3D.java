@@ -62,6 +62,10 @@ public class Glyph3D {
         }
     }
 
+    public Glyph3D(Texture texture, Vector3 position, boolean addToQueue) {
+        this(new TextureRegion(texture), position, addToQueue);
+    }
+
     /**
      * Updates the internal Decal to face the camera and match the object's properties.
      * @param cam The camera to look at.

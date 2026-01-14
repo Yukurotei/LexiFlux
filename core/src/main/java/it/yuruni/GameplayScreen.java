@@ -38,11 +38,15 @@ public class GameplayScreen implements Screen {
     // --- Textures (owned by the screen) ---
     private Texture noteTexture;
     private Texture overlayTexture;
+    private Texture leftArrowCover;
+    private Texture rightArrowCover;
+    private Texture upArrowCover;
+    private Texture downArrowCover;
 
     // --- Variables ---
     private final EventManager eventManager = Main.eventManager;
     private boolean isCameraOffset, isInTransition;
-    private float cameraShiftDelay = 0.1f;
+    private final float cameraShiftDelay = 0.1f;
 
 
     @Override
@@ -68,6 +72,7 @@ public class GameplayScreen implements Screen {
         // --- Load Textures ---
         overlayTexture = new Texture(Gdx.files.internal("Gameplay.png"));
         noteTexture = new Texture(Gdx.files.internal("KeycapWireframe.png"));
+
         TextureRegion noteTextureRegion = new TextureRegion(noteTexture);
 
         // --- Create 3D Glyphs ---
@@ -77,6 +82,9 @@ public class GameplayScreen implements Screen {
         // Create Overlay
         Glyph3D overlay = new Glyph3D(new TextureRegion(overlayTexture), new Vector3(Main.WIDTH / 2f, Main.HEIGHT / 2f, 100f), true);
         overlay.dimension.set(Main.WIDTH, Main.HEIGHT);
+
+        // Create Overlay Covers
+
 
         // Create Notes
         float noteSize = 100f;
