@@ -2,6 +2,7 @@ package it.yuruni;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -23,8 +24,13 @@ import it.yuruni.graphics.animation.Event;
 import it.yuruni.graphics.animation.EventManager;
 import it.yuruni.graphics.effects.CameraManager;
 import it.yuruni.graphics.element.Glyph3D;
+import it.yuruni.utils.ElementUtils;
 
-public class GameplayScreen implements Screen {
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+public class GameplayScreen implements Screen, InputProcessor {
     private CameraInputController controller; //TODO: TEMPORARY, REMOVE
     private PerspectiveCamera cam;
     private CameraManager cameraManager;
@@ -50,7 +56,9 @@ public class GameplayScreen implements Screen {
     private Glyph3D downArrowCover;
 
     // --- Variables ---
-    private int arrowKeyState;
+    private final List<Integer> pressedArrowKeys = new ArrayList<>();
+    //private boolean upWasPressed, downWasPressed, leftWasPressed, rightWasPressed;
+
     private final EventManager eventManager = Main.eventManager;
     private boolean isCameraOffset, isInTransition;
     private final float cameraShiftDelay = 0.1f;
@@ -67,8 +75,8 @@ public class GameplayScreen implements Screen {
         cam.far = 5000f;
         cam.update();
 
-        controller = new CameraInputController(cam);
-        Gdx.input.setInputProcessor(controller);
+        // controller = new CameraInputController(cam); //TODO: TEMPORARY, REMOVE
+        Gdx.input.setInputProcessor(this);
         cameraManager = new CameraManager(cam);
 
         // --- Batches and Viewport Setup ---
@@ -91,7 +99,10 @@ public class GameplayScreen implements Screen {
         overlay.dimension.set(Main.WIDTH, Main.HEIGHT);
 
         // Create Overlay Covers
-        upArrowCover = new Glyph3D(new Texture("upArrowCover.png"), new Vector3(Main.WIDTH / 2f, Main.HEIGHT / 2f + 267, 99f), true);
+        upArrowCover = new Glyph3D(new Texture("upArrowCover.png"), new Vector3(Main.WIDTH / 2f, Main.HEIGHT / 2f + 270.5f, 99f), true);
+        downArrowCover = new Glyph3D(new Texture("downArrowCover.png"), new Vector3(Main.WIDTH / 2f, Main.HEIGHT / 2f - 271, 99f), true);
+        leftArrowCover = new Glyph3D(ElementUtils.resizeTo(new Texture("leftArrowCover.png"), 599, 1076), new Vector3(Main.WIDTH / 2f - 650, Main.HEIGHT / 2f - 0.5f, 99f), true);
+        rightArrowCover = new Glyph3D(ElementUtils.resizeTo(new Texture("leftArrowCover.png"), 599, 1076), new Vector3(Main.WIDTH / 2f + 650, Main.HEIGHT / 2f - 0.5f, 99f), true);
 
         // Create Notes
         float noteSize = 100f;
@@ -120,50 +131,58 @@ public class GameplayScreen implements Screen {
 
         cam.update();
         cameraManager.update(delta);
-        controller.update();
+        //controller.update();
 
         cameraManager.applyEffects();
 
-        // Camera offset when arrow keys are pressed
         float targetCamX = Main.WIDTH / 2f;
         float targetCamY = Main.HEIGHT / 2f;
         final float targetCamZ = 1000f; // Z always stays 1000f
 
         final float offsetAmount = 30f; // Define the offset magnitude
 
-        boolean anyArrowKeyPressed = false;
+        boolean anyArrowKeyPressed = !pressedArrowKeys.isEmpty();
+        Integer lastPressedKey = null;
 
-        if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            targetCamY += offsetAmount;
-            anyArrowKeyPressed = true;
-            arrowKeyState = Input.Keys.UP;
+        if (anyArrowKeyPressed) {
+            lastPressedKey = pressedArrowKeys.get(pressedArrowKeys.size() - 1);
+            switch (lastPressedKey) {
+                case Input.Keys.UP:
+                    targetCamY += offsetAmount;
+                    break;
+                case Input.Keys.DOWN:
+                    targetCamY -= offsetAmount;
+                    break;
+                case Input.Keys.LEFT:
+                    targetCamX -= offsetAmount;
+                    break;
+                case Input.Keys.RIGHT:
+                    targetCamX += offsetAmount;
+                    break;
+            }
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            targetCamY -= offsetAmount;
-            anyArrowKeyPressed = true;
-            arrowKeyState = Input.Keys.DOWN;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            targetCamX -= offsetAmount;
-            anyArrowKeyPressed = true;
-            arrowKeyState = Input.Keys.LEFT;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            targetCamX += offsetAmount;
-            anyArrowKeyPressed = true;
-            arrowKeyState = Input.Keys.RIGHT;
-        }
+
 
         if (anyArrowKeyPressed) {
             if (!isInTransition && (cam.position.x != targetCamX || cam.position.y != targetCamY)) {
                 isCameraOffset = true;
                 isInTransition = true;
                 cameraManager.setPosition3D(targetCamX, targetCamY, targetCamZ, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
-                if (arrowKeyState == Input.Keys.UP) {
+
+                if (lastPressedKey == Input.Keys.UP) {
                     animationManager.animateFade(upArrowCover, 0.1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
-                } else {
-                    animationManager.animateFade(upArrowCover, 1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
+                    resetCovers();
+                } else if (lastPressedKey == Input.Keys.DOWN) {
+                    animationManager.animateFade(downArrowCover, 0.1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
+                    resetCovers();
+                } else if (lastPressedKey == Input.Keys.LEFT) {
+                    animationManager.animateFade(leftArrowCover, 0.1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
+                    resetCovers();
+                } else if (lastPressedKey == Input.Keys.RIGHT) {
+                    animationManager.animateFade(rightArrowCover, 0.1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
+                    resetCovers();
                 }
+
                 eventManager.addEvent(new Event(Main.timePassed + cameraShiftDelay, () -> {
                     isInTransition = false;
                 }));
@@ -172,7 +191,7 @@ public class GameplayScreen implements Screen {
             if (isCameraOffset && !isInTransition) {
                 isInTransition = true;
                 cameraManager.setPosition3D(Main.WIDTH / 2f, Main.HEIGHT / 2f, 1000f, 0.2f, Easing.EASE_IN_OUT_QUAD);
-                animationManager.animateFade(upArrowCover, 1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
+                resetCovers();
                 eventManager.addEvent(new Event(Main.timePassed + cameraShiftDelay, () -> {
                     isCameraOffset = false;
                     isInTransition = false;
@@ -194,6 +213,13 @@ public class GameplayScreen implements Screen {
         modelBatch.end();
 
         cameraManager.resetEffects();
+    }
+
+    private void resetCovers() {
+        animationManager.animateFade(upArrowCover, 1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
+        animationManager.animateFade(downArrowCover, 1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
+        animationManager.animateFade(leftArrowCover, 1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
+        animationManager.animateFade(rightArrowCover, 1f, cameraShiftDelay, Easing.EASE_IN_OUT_QUAD);
     }
 
     @Override
@@ -221,5 +247,61 @@ public class GameplayScreen implements Screen {
         decalBatch.dispose();
         noteTexture.dispose();
         overlayTexture.dispose();
+    }
+
+    // --- InputProcessor Methods ---
+
+    @Override
+    public boolean keyDown(int keycode) {
+        if (keycode == Input.Keys.UP || keycode == Input.Keys.DOWN || keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT) {
+            pressedArrowKeys.remove((Integer) keycode);
+            pressedArrowKeys.add(keycode);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean keyUp(int keycode) {
+        if (keycode == Input.Keys.UP || keycode == Input.Keys.DOWN || keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT) {
+            pressedArrowKeys.remove((Integer) keycode);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean keyTyped(char character) {
+        return false;
+    }
+
+    @Override
+    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+        return false;
+    }
+
+    @Override
+    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+        return false;
+    }
+
+    @Override
+    public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
+        return false;
+    }
+
+    @Override
+    public boolean touchDragged(int screenX, int screenY, int pointer) {
+        return false;
+    }
+
+    @Override
+    public boolean mouseMoved(int screenX, int screenY) {
+        return false;
+    }
+
+    @Override
+    public boolean scrolled(float amountX, float amountY) {
+        return false;
     }
 }
