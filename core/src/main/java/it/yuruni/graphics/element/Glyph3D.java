@@ -74,6 +74,5 @@ public class Glyph3D {
         decal.setPosition(this.position);
         decal.setRotation(this.rotation.x, this.rotation.y, this.rotation.z);
         decal.setDimensions(this.dimension.x, this.dimension.y);
-        if (cam != null) decal.lookAt(cam.position, cam.up);
     }
 }
