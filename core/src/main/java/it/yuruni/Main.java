@@ -46,7 +46,7 @@ public class Main extends Game {
         cameraManager = new CameraManager(camera);
         viewport = new FitViewport(WIDTH, HEIGHT, camera);
 
-        setScreen(new GameplayScreen());
+        setScreen(new FirstScreen());
     }
 
     @Override

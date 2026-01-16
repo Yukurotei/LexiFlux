@@ -8,8 +8,8 @@ import com.badlogic.gdx.math.Quaternion;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
-import it.yuruni.utils.ElementUtils;
 import it.yuruni.graphics.Easing;
+import it.yuruni.utils.ElementUtils;
 
 public class CameraManager {
     private final Camera camera;
@@ -271,7 +271,6 @@ public class CameraManager {
     private void updateShake(float delta) {
         if (shakeTimer > 0) {
             shakeTimer -= delta;
-            intervalTimer -= delta;
 
             if (shakeTimer <= 0) {
                 shakeTimer = 0;
@@ -279,7 +278,9 @@ public class CameraManager {
                 currentShakeX = 0;
                 currentShakeY = 0;
                 currentShakeZ = 0;
+                intervalTimer = 0;
             } else {
+                intervalTimer -= delta;
                 if (intervalTimer <= 0) {
                     intervalTimer = shakeInterval;
                     currentShakeX = MathUtils.random(-1f, 1f) * shakeIntensity;
@@ -289,6 +290,10 @@ public class CameraManager {
                     }
                 }
             }
+        } else {
+            currentShakeX = 0;
+            currentShakeY = 0;
+            currentShakeZ = 0;
         }
     }
 
