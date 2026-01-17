@@ -1,0 +1,21 @@
+# LexiFlux Level - Chill Vibes
+# Times are in milliseconds
+
+[Metadata]
+Name: Chill Vibes
+Artist: LoFi King
+BPM: 90
+AudioFile: chill_vibes.mp3
+BackgroundImage: sunset_bg.jpg
+Difficulty: 2
+
+[Notes]
+# time(ms), lane
+1500, UP
+2500, DOWN
+3500, LEFT
+4500, RIGHT
+5500, UP
+6500, DOWN
+7500, LEFT
+8500, RIGHT

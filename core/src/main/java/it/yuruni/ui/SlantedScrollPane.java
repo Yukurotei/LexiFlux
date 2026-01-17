@@ -199,6 +199,29 @@ public class SlantedScrollPane {
         return items.first();
     }
 
+    public ScrollPaneItem getItem(int index) {
+        if (index < 0 || index >= items.size) return null;
+        return items.get(index);
+    }
+
+    public int getItemCount() {
+        return items.size;
+    }
+
+    public int getItemIndex(ScrollPaneItem item) {
+        return items.indexOf(item, true);
+    }
+
+    /**
+     * Scrolls to center the item at the given index.
+     */
+    public void scrollToItem(int index) {
+        if (index < 0 || index >= items.size) return;
+        float targetPosition = index * itemSpacing;
+        currentScrollPosition = MathUtils.clamp(targetPosition, lowerScrollBound, upperScrollBound);
+        scrollVelocity = 0;
+    }
+
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
         // The hover logic in update() has already found the item under the cursor.
         if (button == Input.Buttons.LEFT && hoveredItem != null) {

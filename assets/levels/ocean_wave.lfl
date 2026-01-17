@@ -1,0 +1,21 @@
+# LexiFlux Level - Ocean Wave
+# Times are in milliseconds
+
+[Metadata]
+Name: Ocean Wave
+Artist: Ambient
+BPM: 100
+AudioFile: ocean_wave.mp3
+BackgroundImage: ocean_bg.jpg
+Difficulty: 1
+
+[Notes]
+# time(ms), lane
+2000, UP
+3000, DOWN
+4000, LEFT
+5000, RIGHT
+6000, UP
+7000, DOWN
+8000, LEFT
+9000, RIGHT

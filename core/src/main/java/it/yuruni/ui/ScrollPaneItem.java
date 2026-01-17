@@ -9,7 +9,7 @@ import it.yuruni.graphics.element.Glyph;
  */
 public class ScrollPaneItem extends Glyph {
 
-    private final Runnable onClick;
+    private Runnable onClick;
     private Runnable onHover;
     private Runnable onUnHover;
     private boolean isHovered = false;
@@ -23,6 +23,10 @@ public class ScrollPaneItem extends Glyph {
      */
     public ScrollPaneItem(Texture texture, float x, float y, boolean addToQueue, Runnable onClick) {
         super(texture, x, y, addToQueue);
+        this.onClick = onClick;
+    }
+
+    public void setOnClick(Runnable onClick) {
         this.onClick = onClick;
     }
 

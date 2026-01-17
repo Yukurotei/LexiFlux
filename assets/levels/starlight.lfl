@@ -1,0 +1,23 @@
+# LexiFlux Level - Starlight
+# Times are in milliseconds
+
+[Metadata]
+Name: Starlight
+Artist: Cosmic DJ
+BPM: 128
+AudioFile: starlight.mp3
+BackgroundImage: space_bg.jpg
+Difficulty: 4
+
+[Notes]
+# time(ms), lane
+1000, UP
+1500, RIGHT
+2000, DOWN
+2500, LEFT
+3000, UP
+3500, RIGHT
+4000, DOWN
+4500, LEFT
+5000, UP
+5500, DOWN

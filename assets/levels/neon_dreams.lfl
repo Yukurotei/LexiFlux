@@ -1,0 +1,25 @@
+# LexiFlux Level - Neon Dreams
+# Times are in milliseconds
+
+[Metadata]
+Name: Neon Dreams
+Artist: SynthWave
+BPM: 140
+AudioFile: neon_dreams.mp3
+BackgroundImage: neon_bg.jpg
+Difficulty: 5
+
+[Notes]
+# time(ms), lane
+500, UP
+750, DOWN
+1000, LEFT
+1250, RIGHT
+1500, UP
+1750, DOWN
+2000, LEFT
+2250, RIGHT
+2500, UP
+2750, DOWN
+3000, LEFT
+3250, RIGHT

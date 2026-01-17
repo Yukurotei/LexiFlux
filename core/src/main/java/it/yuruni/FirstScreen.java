@@ -27,7 +27,9 @@ import it.yuruni.graphics.element.Glyph;
 import it.yuruni.graphics.element.TextGlyph;
 import it.yuruni.tools.debug.GlyphEditor;
 import it.yuruni.tools.debug.MouseInspector;
+import it.yuruni.game.level.LevelScanner;
 import it.yuruni.ui.Button;
+import it.yuruni.ui.LevelCard;
 import it.yuruni.ui.ScrollPaneItem;
 import it.yuruni.ui.SlantedScrollPane;
 import it.yuruni.utils.ElementUtils;
@@ -69,6 +71,9 @@ public class FirstScreen implements Screen, InputProcessor {
     private GlyphEditor glyphEditor;
     private SlantedScrollPane slantedScrollPane;
     private MouseInspector mouseInspector;
+
+    // Level selection
+    private LevelCard selectedCard = null;
 
 
     @Override
@@ -131,10 +136,10 @@ public class FirstScreen implements Screen, InputProcessor {
         // Setup Slanted Scroll Pane
         slantedScrollPane = new SlantedScrollPane(levelScroll, new Vector2(108.7f, -803.2f), Main.camera);
         Texture levelCardTexture = new Texture("LevelCard.png");
-        for(int i = 0; i < 15; i++) {
-            ScrollPaneItem card = new ScrollPaneItem(levelCardTexture, 0, 0, false, () -> {
-                Gdx.app.log("SlantedScrollPane", "Card CLICKED");
-            });
+
+        // Scan for level files and create cards
+        Array<LevelCard> levelCards = LevelScanner.scanLevels(levelCardTexture, this::selectCard);
+        for (LevelCard card : levelCards) {
             slantedScrollPane.addItem(card);
         }
 
@@ -473,6 +478,29 @@ public class FirstScreen implements Screen, InputProcessor {
         font.dispose();
     }
 
+    // --- Level Selection ---
+
+    /**
+     * Selects the given level card, deselecting the previous one if any.
+     */
+    private void selectCard(LevelCard card) {
+        if (card == selectedCard) return;
+
+        // Deselect previous card
+        if (selectedCard != null) {
+            selectedCard.setSelected(false);
+        }
+
+        // Select new card
+        selectedCard = card;
+        if (selectedCard != null) {
+            selectedCard.setSelected(true);
+            Gdx.app.log("LevelSelect", "Selected: " + selectedCard.getLevelName() +
+                    " by " + selectedCard.getArtist() +
+                    " (" + selectedCard.getBpm() + " BPM, Difficulty " + selectedCard.getDifficulty() + ")");
+        }
+    }
+
     // --- InputProcessor Methods ---
 
     @Override
@@ -483,6 +511,52 @@ public class FirstScreen implements Screen, InputProcessor {
         if (mouseInspector != null && mouseInspector.keyDown(keycode)) {
             return true;
         }
+
+        // Level selection navigation (when not in main menu)
+        if (!isInMainMenu && slantedScrollPane != null) {
+            int currentIndex = selectedCard != null
+                    ? slantedScrollPane.getItemIndex(selectedCard)
+                    : -1;
+
+            if (keycode == Input.Keys.DOWN || keycode == Input.Keys.RIGHT) {
+                // Navigate to next card (or first if nothing selected)
+                int nextIndex = currentIndex + 1;
+                if (nextIndex < slantedScrollPane.getItemCount()) {
+                    ScrollPaneItem nextItem = slantedScrollPane.getItem(nextIndex);
+                    if (nextItem instanceof LevelCard) {
+                        selectCard((LevelCard) nextItem);
+                        slantedScrollPane.scrollToItem(nextIndex);
+                    }
+                } else if (currentIndex == -1 && slantedScrollPane.getItemCount() > 0) {
+                    // Nothing selected, select first
+                    ScrollPaneItem firstItem = slantedScrollPane.getFirstItem();
+                    if (firstItem instanceof LevelCard) {
+                        selectCard((LevelCard) firstItem);
+                        slantedScrollPane.scrollToItem(0);
+                    }
+                }
+                return true;
+            } else if (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT) {
+                // Navigate to previous card
+                int prevIndex = currentIndex - 1;
+                if (prevIndex >= 0) {
+                    ScrollPaneItem prevItem = slantedScrollPane.getItem(prevIndex);
+                    if (prevItem instanceof LevelCard) {
+                        selectCard((LevelCard) prevItem);
+                        slantedScrollPane.scrollToItem(prevIndex);
+                    }
+                } else if (currentIndex == -1 && slantedScrollPane.getItemCount() > 0) {
+                    // Nothing selected, select first
+                    ScrollPaneItem firstItem = slantedScrollPane.getFirstItem();
+                    if (firstItem instanceof LevelCard) {
+                        selectCard((LevelCard) firstItem);
+                        slantedScrollPane.scrollToItem(0);
+                    }
+                }
+                return true;
+            }
+        }
+
         return false;
     }
 
