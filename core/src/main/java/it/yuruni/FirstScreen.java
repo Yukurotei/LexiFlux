@@ -28,6 +28,7 @@ import it.yuruni.graphics.element.TextGlyph;
 import it.yuruni.tools.debug.GlyphEditor;
 import it.yuruni.tools.debug.MouseInspector;
 import it.yuruni.ui.Button;
+import it.yuruni.ui.ScrollPaneItem;
 import it.yuruni.ui.SlantedScrollPane;
 import it.yuruni.utils.ElementUtils;
 
@@ -128,10 +129,12 @@ public class FirstScreen implements Screen, InputProcessor {
         levelDifficulties =  new Glyph(new Texture("LevelDifficulties.png"), 520f, -400f, true);
 
         // Setup Slanted Scroll Pane
-        slantedScrollPane = new SlantedScrollPane(levelScroll, new Vector2(108.7f, -803.2f));
+        slantedScrollPane = new SlantedScrollPane(levelScroll, new Vector2(108.7f, -803.2f), Main.camera);
         Texture levelCardTexture = new Texture("LevelCard.png");
         for(int i = 0; i < 15; i++) {
-            Glyph card = new Glyph(levelCardTexture, 0, 0, false);
+            ScrollPaneItem card = new ScrollPaneItem(levelCardTexture, 0, 0, false, () -> {
+                Gdx.app.log("SlantedScrollPane", "Card CLICKED");
+            });
             slantedScrollPane.addItem(card);
         }
 
@@ -327,7 +330,7 @@ public class FirstScreen implements Screen, InputProcessor {
                                 //LV menus
                                 animationManager.animateMove(slantedScrollPane.getBackground(), 20f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 animationManager.animateMove(levelInfo, 406.5f, 345f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                                animationManager.animateMove(levelDifficulties, 485f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                animationManager.animateMove(levelDifficulties, 482, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 mainButton.setY(670);
                                 mainButton.setX(-140);
                                 eventManager.addEvent(new Event(Main.timePassed + 1f, () -> {
@@ -496,6 +499,9 @@ public class FirstScreen implements Screen, InputProcessor {
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
         if (glyphEditor != null && glyphEditor.touchDown(screenX, screenY, pointer, button)) {
+            return true;
+        }
+        if (slantedScrollPane != null && slantedScrollPane.touchDown(screenX, screenY, pointer, button)) {
             return true;
         }
         return false;
