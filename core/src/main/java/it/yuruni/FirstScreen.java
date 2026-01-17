@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
@@ -25,7 +26,9 @@ import it.yuruni.graphics.effects.YParticleEffect;
 import it.yuruni.graphics.element.Glyph;
 import it.yuruni.graphics.element.TextGlyph;
 import it.yuruni.tools.debug.GlyphEditor;
+import it.yuruni.tools.debug.MouseInspector;
 import it.yuruni.ui.Button;
+import it.yuruni.ui.SlantedScrollPane;
 import it.yuruni.utils.ElementUtils;
 
 
@@ -38,7 +41,7 @@ public class FirstScreen implements Screen, InputProcessor {
     private final CameraManager cameraManager = Main.cameraManager;
     private final ShaderManager shaderManager = Main.shaderManager;
     private final EventManager eventManager = Main.eventManager;
-    // private AudioEffectManager audioManager;
+    private AudioEffectManager audioManager;
 
     private TextGlyph tutorialText;
     private Button mainButton;
@@ -48,10 +51,8 @@ public class FirstScreen implements Screen, InputProcessor {
     private Glyph logoLexi;
     private Glyph logoFlux;
 
-    private Glyph levelScroll;
     private Glyph levelInfo;
     private Glyph levelDifficulties;
-    private Glyph levelCard;
 
     private Array<Glyph> fadeGlyphs;
     private float nextBeatTime = 0f;
@@ -65,6 +66,8 @@ public class FirstScreen implements Screen, InputProcessor {
     private float playArrowExtendedY;
 
     private GlyphEditor glyphEditor;
+    private SlantedScrollPane slantedScrollPane;
+    private MouseInspector mouseInspector;
 
 
     @Override
@@ -73,6 +76,7 @@ public class FirstScreen implements Screen, InputProcessor {
         Gdx.input.setInputProcessor(this);
 
         glyphEditor = new GlyphEditor(Main.camera, Main.glyphs);
+        mouseInspector = new MouseInspector(Main.viewport);
 
 //        audioManager = new AudioEffectManager(
 //                Gdx.files.internal("./audio/song/SECRET BOSS_muffled.mp3"),
@@ -119,16 +123,18 @@ public class FirstScreen implements Screen, InputProcessor {
         fadeGlyphs = new Array<>(new Glyph[]{upFade, downFade});
 
         //LV selections
-        levelScroll = new Glyph(new Texture("./LevelScroll.png"), 0, 0, true);
-        levelInfo = new Glyph(new Texture("./LevelInfo.png"), 0, 0, true);
-        levelDifficulties =  new Glyph(new Texture("./LevelDifficulties.png"), 0, 0, true);
-        levelCard = new Glyph(new Texture("./LevelCard.png"), 0, 0, true);
-        levelScroll.setX(-600f);
-        levelScroll.setY(50f);
-        levelInfo.setX(300f);
-        levelInfo.setY(1500f);
-        levelDifficulties.setX(520f);
-        levelDifficulties.setY(-400f);
+        Glyph levelScroll = new Glyph(new Texture("LevelScroll.png"), -600f, 50f, false);
+        levelInfo = new Glyph(new Texture("LevelInfo.png"), 300f, 1500f, true);
+        levelDifficulties =  new Glyph(new Texture("LevelDifficulties.png"), 520f, -400f, true);
+
+        // Setup Slanted Scroll Pane
+        slantedScrollPane = new SlantedScrollPane(levelScroll, new Vector2(108.7f, -803.2f));
+        Texture levelCardTexture = new Texture("LevelCard.png");
+        for(int i = 0; i < 15; i++) {
+            Glyph card = new Glyph(levelCardTexture, 0, 0, false);
+            slantedScrollPane.addItem(card);
+        }
+
 
         playMenuRect = new Glyph(new Texture("./ui/menuRect.png"), -1000, -1000, true);
         playArrow = new Glyph(new Texture("./ui/playButton.png"), -1000, -1000, true);
@@ -142,7 +148,7 @@ public class FirstScreen implements Screen, InputProcessor {
         logoLexi.setScaleY(logoLexi.getScaleY() * 0.5f);
         logoFlux = new Glyph(new Texture("./logo/Flux.png"), 50 - 1000, 700, true);
         logoFlux.setScaleX(logoFlux.getScaleX() * 0.4f);
-        logoFlux.setScaleY(logoFlux.getScaleY() * 0.4f);
+        logoFlux.setScaleY(logoLexi.getScaleY() * 0.4f);
 
         //Some text
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/josefin-sans-latin-400-normal.ttf"));
@@ -279,12 +285,14 @@ public class FirstScreen implements Screen, InputProcessor {
             // audioManager.update(delta); // Commented out audioManager call
             cameraManager.update(delta);
             parallaxManager.update(delta);
+            if (slantedScrollPane != null) {
+                slantedScrollPane.update(delta);
+            }
 
             if (mainButton != null) mainButton.update(delta);
 
             if (Main.timePassed >= nextBeatTime && nextBeatTime > 0) {
                 nextBeatTime += beatInterval;
-
                 Glyph targetGlyph = fadeGlyphs.random();
                 animationManager.animateFade(targetGlyph, 0.5f, 0.1f, Easing.EASE_OUT_SINE);
                 eventManager.addEvent(new Event(Main.timePassed + 0.1f, () -> {
@@ -296,6 +304,9 @@ public class FirstScreen implements Screen, InputProcessor {
             if (isInMainMenu) {
                 if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
                     if (Gdx.input.isKeyPressed(Input.Keys.SPACE) && playMenuRect.getAlpha() == 0.99f) {
+                        animationManager.stopPulsing(logo);
+                        animationManager.stopPulsing(logoLexi);
+                        animationManager.stopPulsing(logoFlux);
                         playMenuRect.setAlpha(0.98f);
                         animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() - 500, 1f, Easing.EASE_IN_OUT_EXPO);
                         animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectOriginY, 0.3f, Easing.EASE_IN_OUT_QUINT);
@@ -314,7 +325,7 @@ public class FirstScreen implements Screen, InputProcessor {
                                 animationManager.animateMove(logoLexi, 41, 940, 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 animationManager.animateMove(logoFlux, -121, 750, 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 //LV menus
-                                animationManager.animateMove(levelScroll, 20f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                animationManager.animateMove(slantedScrollPane.getBackground(), 20f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 animationManager.animateMove(levelInfo, 406.5f, 345f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 animationManager.animateMove(levelDifficulties, 485f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 mainButton.setY(670);
@@ -362,7 +373,7 @@ public class FirstScreen implements Screen, InputProcessor {
                     animationManager.animateScale(logoFlux, 0.4f, 0.4f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                     animationManager.animateMove(logoLexi, logoLexi.getX() - 850, logoLexi.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
                     animationManager.animateMove(logoFlux, logoFlux.getX() - 850, logoFlux.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
-                    animationManager.animateMove(levelScroll, -600f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateMove(slantedScrollPane.getBackground(), -600f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                     animationManager.animateMove(levelInfo, 300f, 1500f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                     animationManager.animateMove(levelDifficulties, 520f, -400f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                     mainButton.setY(playMenuRect.getY() - 5f);
@@ -395,10 +406,29 @@ public class FirstScreen implements Screen, InputProcessor {
                 eff.update(delta);
                 eff.draw(batch);
             }
+            slantedScrollPane.render(Main.camera, batch);
 
             // Render the glyph editor UI
             if (glyphEditor != null) {
                 glyphEditor.render(batch, font);
+            }
+            if (mouseInspector != null) {
+                mouseInspector.render(batch, font);
+            }
+
+            // Render debug text for the scroll pane
+            if (mouseInspector != null) {
+                if (mouseInspector.isEnabled()) {
+                    if (slantedScrollPane != null) {
+                        Glyph firstCard = slantedScrollPane.getFirstItem();
+                        if (firstCard != null) {
+                            font.setColor(Color.RED);
+                            String coords = String.format("Card1: %.1f, %.1f", firstCard.getX(), firstCard.getY());
+                            font.draw(batch, coords, firstCard.getX(), firstCard.getY() - 20);
+                            font.setColor(Color.WHITE);
+                        }
+                    }
+                }
             }
 
             batch.end();
@@ -447,7 +477,9 @@ public class FirstScreen implements Screen, InputProcessor {
         if (glyphEditor != null && glyphEditor.keyDown(keycode)) {
             return true;
         }
-        // other key down logic for the screen can go here
+        if (mouseInspector != null && mouseInspector.keyDown(keycode)) {
+            return true;
+        }
         return false;
     }
 
@@ -466,7 +498,6 @@ public class FirstScreen implements Screen, InputProcessor {
         if (glyphEditor != null && glyphEditor.touchDown(screenX, screenY, pointer, button)) {
             return true;
         }
-        // other touch down logic for the screen can go here
         return false;
     }
 
@@ -496,6 +527,15 @@ public class FirstScreen implements Screen, InputProcessor {
 
     @Override
     public boolean scrolled(float amountX, float amountY) {
+        if (slantedScrollPane != null) {
+            Vector2 touchPos = new Vector2(Gdx.input.getX(), Gdx.input.getY());
+            Main.viewport.unproject(touchPos);
+            boolean isContained = slantedScrollPane.getBoundingRectangle().contains(touchPos.x, touchPos.y);
+            Gdx.app.log("FirstScreen#scrolled", "Mouse: " + touchPos + " | Bounds: " + slantedScrollPane.getBoundingRectangle() + " | Contained: " + isContained);
+            if (isContained) {
+                return slantedScrollPane.scrolled(amountY);
+            }
+        }
         return false;
     }
 }
