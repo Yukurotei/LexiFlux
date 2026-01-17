@@ -47,6 +47,8 @@ public class GameplayScreen implements Screen, InputProcessor {
     private DecalBatch decalBatch;
     private Viewport viewport;
 
+    private float timePassed = Main.timePassed;
+
     // --- 2D Rendering ---
     private SpriteBatch spriteBatch;
     private BitmapFont font;
@@ -201,7 +203,6 @@ public class GameplayScreen implements Screen, InputProcessor {
     public void render(float delta) {
         // --- Update and Cleanup ---
         checkNotes();
-
 
         viewport.apply();
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.15f, 1);

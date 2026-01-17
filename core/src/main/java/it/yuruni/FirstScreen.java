@@ -37,7 +37,7 @@ public class FirstScreen implements Screen {
     private final ShaderManager shaderManager = Main.shaderManager;
     private final EventManager eventManager = Main.eventManager;
     private AudioEffectManager audioManager;
-    private final float timePassed = Main.timePassed;
+
 
     private TextGlyph tutorialText;
     private Button mainButton;
@@ -160,14 +160,14 @@ public class FirstScreen implements Screen {
         door_open_close.play();
 
         //Sound visualization (door open)
-        eventManager.addEvent(new Event(2f, () -> {
+        eventManager.addEvent(new Event(2.4f, () -> {
             monitor_on.play();
             cameraManager.shake(0.2f, 3f, 0.0025f);
-            animationManager.animateMove(soundCover, soundCover.getX() + 400, soundCover.getY(), 0.25f,Easing.LINEAR);
+            animationManager.animateMove(soundCover, soundCover.getX() + 400, soundCover.getY(), 0.25f, Easing.LINEAR);
         }));
-        eventManager.addEvent(new Event(2.25f, () -> {
+        eventManager.addEvent(new Event(2.65f, () -> {
             soundCover.setX(soundCover.getX() - 800);
-            animationManager.animateMove(soundCover, soundCover.getX() + 400, soundCover.getY(), 0.4f,Easing.LINEAR);
+            animationManager.animateMove(soundCover, soundCover.getX() + 400, soundCover.getY(), 0.4f, Easing.LINEAR);
         }));
         //Keyboard slide down
         eventManager.addEvent(new Event(3f, () -> {
@@ -259,107 +259,82 @@ public class FirstScreen implements Screen {
 
             if (mainButton != null) mainButton.update(delta);
 
-            if (timePassed >= nextBeatTime && nextBeatTime > 0) {
+            if (Main.timePassed >= nextBeatTime && nextBeatTime > 0) {
                 nextBeatTime += beatInterval;
 
                 Glyph targetGlyph = fadeGlyphs.random();
                 animationManager.animateFade(targetGlyph, 0.5f, 0.1f, Easing.EASE_OUT_SINE);
-                eventManager.addEvent(new Event(timePassed + 0.1f, () -> {
+                eventManager.addEvent(new Event(Main.timePassed + 0.1f, () -> {
                     animationManager.animateFade(targetGlyph, 0f, 0.3f, Easing.EASE_IN_SINE);
                 }));
             }
 
             // --- menu switching stuff ---
             if (isInMainMenu) {
-                // 1. HANDLE THE SELECTION (Trigger once on tap)
-                if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && isMenuExtended) {
-                    isMenuExtended = false; // Use a boolean flag instead of checking Alpha
-
-                    // Stop any current menu movement anims before starting the "Launch" sequence
-                    animationManager.stopAllAnimations(playMenuRect);
-                    animationManager.stopAllAnimations(playArrow);
-                    animationManager.stopAllAnimations(tutorialText);
-
-                    animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() - 500, 1f, Easing.EASE_IN_OUT_EXPO);
-                    animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectOriginY, 0.3f, Easing.EASE_IN_OUT_QUINT);
-                    animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.5f, Easing.EASE_IN_OUT_QUINT);
-                    animationManager.animateRotation(playArrow, -5f, 0.5f, Easing.EASE_IN_OUT_BACK);
-
-                    eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
-                        animationManager.animateMove(playArrow, playArrow.getX() - 1500, playArrow.getY(), 1f, Easing.EASE_IN_OUT_QUINT);
-                        eventManager.addEvent(new Event(timePassed + 0.2f, () -> {
-                            playMenuRect.setAlpha(0f);
-                            animationManager.animateMove(logo, -140, 670, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                            mainButton.setX(-140);
-                            mainButton.setY(670);
-                            animationManager.animateMove(logoLexi, logoLexi.getX() + 1000, logoLexi.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
-                            animationManager.animateMove(logoFlux, logoFlux.getX() + 1000, logoFlux.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
-                            eventManager.addEvent(new Event(timePassed + 1f, () -> {
-                                isInMainMenu = false;
+                if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+                    if (Gdx.input.isKeyPressed(Input.Keys.SPACE) && playMenuRect.getAlpha() == 0.99f) {
+                        playMenuRect.setAlpha(0.98f);
+                        animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() - 500, 1f, Easing.EASE_IN_OUT_EXPO);
+                        animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectOriginY, 0.3f, Easing.EASE_IN_OUT_QUINT);
+                        animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.5f, Easing.EASE_IN_OUT_QUINT);
+                        animationManager.animateRotation(playArrow, -5f, 0.5f, Easing.EASE_IN_OUT_BACK);
+                        eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
+                            animationManager.animateMove(playArrow, playArrow.getX() - 1500, playArrow.getY(), 1f, Easing.EASE_IN_OUT_QUINT);
+                            eventManager.addEvent(new Event(Main.timePassed + 0.2f, () -> {
+                                playMenuRect.setAlpha(0f);
+                                animationManager.animateMove(logo, -140, 670, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                mainButton.setY(670);
+                                mainButton.setX(-140);
+                                animationManager.animateMove(logoLexi, logoLexi.getX() + 1000, logoLexi.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                animationManager.animateMove(logoFlux, logoFlux.getX() + 1000, logoFlux.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                eventManager.addEvent(new Event(Main.timePassed + 1f, () -> {
+                                    isInMainMenu = false;
+                                }));
                             }));
                         }));
-                    }));
-                    ElementUtils.putAfter(Main.glyphs, playArrow, logo);
-                }
-
-                // 2. HANDLE THE HOVER/UP KEY (Open/Close Menu)
-                if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-                    if (!isMenuExtended && !isAnimatingMenu) {
-                        isAnimatingMenu = true;
-
-                        // Prevent twitching by clearing current anims
-                        animationManager.stopAllAnimations(playMenuRect);
+                        ElementUtils.putAfter(Main.glyphs, playArrow, logo);
+                    }
+                    if (playMenuRect.getAlpha() == 1f) {
                         animationManager.stopAllAnimations(playArrow);
-
+                        animationManager.stopAllAnimations(playMenuRect);
                         animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectExtendedY, 0.3f, Easing.EASE_IN_OUT_QUINT);
                         animationManager.animateMove(playArrow, playArrow.getX(), playArrowExtendedY, 0.4f, Easing.EASE_IN_OUT_QUINT);
                         animationManager.animateRotation(playArrow, 360, 0.4f, Easing.EASE_IN_OUT_EXPO);
-
-                        eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
-                            isMenuExtended = true;
-                            isAnimatingMenu = false;
+                        playMenuRect.setAlpha(0.98f);
+                        eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
+                            playMenuRect.setAlpha(0.99f);
                         }));
                     }
                 } else {
-                    if (isMenuExtended && !isAnimatingMenu) {
-                        isAnimatingMenu = true;
-
-                        animationManager.stopAllAnimations(playMenuRect);
+                    if (playMenuRect.getAlpha() == 0.99f) {
                         animationManager.stopAllAnimations(playArrow);
-
+                        animationManager.stopAllAnimations(playMenuRect);
                         animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectOriginY, 0.3f, Easing.EASE_IN_OUT_QUINT);
                         animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.4f, Easing.EASE_IN_OUT_QUINT);
                         animationManager.animateRotation(playArrow, -360, 0.4f, Easing.EASE_IN_OUT_CIRC);
-
-                        eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
-                            isMenuExtended = false;
-                            isAnimatingMenu = false;
+                        playMenuRect.setAlpha(0.98f);
+                        eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
+                            playMenuRect.setAlpha(1f);
                         }));
                     }
                 }
             } else {
-                // 3. HANDLE ESCAPE (Back to Menu)
-                if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+                if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
                     isInMainMenu = true;
-                    // Stop current transitions
-                    animationManager.stopAllAnimations(logo);
-                    animationManager.stopAllAnimations(playArrow);
-
                     animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() + 500, 1f, Easing.EASE_IN_OUT_EXPO);
                     animationManager.animateRotation(playArrow, 0, 0.5f, Easing.EASE_IN_OUT_BACK);
                     animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.5f, Easing.EASE_IN_OUT_QUINT);
                     animationManager.animateMove(logo, playMenuRect.getX() - 5f, playMenuRect.getY() - 50, 1f, Easing.EASE_IN_OUT_ELASTIC);
-
-                    mainButton.setX(playMenuRect.getX() - 50);
                     mainButton.setY(playMenuRect.getY() - 5f);
-
-                    eventManager.addEvent(new Event(timePassed + 0.4f, () -> {
+                    mainButton.setX(playMenuRect.getX() - 50);
+                    eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
                         animationManager.animateMove(playArrow, playArrow.getX() + 1500, playArrow.getY(), 1f, Easing.EASE_IN_OUT_QUINT);
                         animationManager.animateMove(logoLexi, logoLexi.getX() - 1000, logoLexi.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
                         animationManager.animateMove(logoFlux, logoFlux.getX() - 1000, logoFlux.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
-                        eventManager.addEvent(new Event(timePassed + 1.2f, () -> {
-                            playMenuRect.setAlpha(1f);
-                            isMenuExtended = false;
+                        eventManager.addEvent(new Event(Main.timePassed + 0.2f, () -> {
+                            eventManager.addEvent(new Event(Main.timePassed + 1f, () -> {
+                                playMenuRect.setAlpha(1f);
+                            }));
                         }));
                     }));
                     ElementUtils.putBefore(Main.glyphs, playArrow, logo);
