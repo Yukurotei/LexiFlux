@@ -2,6 +2,7 @@ package it.yuruni;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
@@ -23,12 +24,13 @@ import it.yuruni.graphics.effects.ShaderManager;
 import it.yuruni.graphics.effects.YParticleEffect;
 import it.yuruni.graphics.element.Glyph;
 import it.yuruni.graphics.element.TextGlyph;
+import it.yuruni.tools.debug.GlyphEditor;
 import it.yuruni.ui.Button;
 import it.yuruni.utils.ElementUtils;
 
 
 /** First screen of the application. Displayed after the application is created. */
-public class FirstScreen implements Screen {
+public class FirstScreen implements Screen, InputProcessor {
 
     private SpriteBatch batch;
     private final AnimationManager animationManager = Main.animationManager;
@@ -36,8 +38,7 @@ public class FirstScreen implements Screen {
     private final CameraManager cameraManager = Main.cameraManager;
     private final ShaderManager shaderManager = Main.shaderManager;
     private final EventManager eventManager = Main.eventManager;
-    private AudioEffectManager audioManager;
-
+    // private AudioEffectManager audioManager;
 
     private TextGlyph tutorialText;
     private Button mainButton;
@@ -46,6 +47,11 @@ public class FirstScreen implements Screen {
     private Glyph logo;
     private Glyph logoLexi;
     private Glyph logoFlux;
+
+    private Glyph levelScroll;
+    private Glyph levelInfo;
+    private Glyph levelDifficulties;
+    private Glyph levelCard;
 
     private Array<Glyph> fadeGlyphs;
     private float nextBeatTime = 0f;
@@ -58,15 +64,20 @@ public class FirstScreen implements Screen {
     private float playArrowOriginY;
     private float playArrowExtendedY;
 
+    private GlyphEditor glyphEditor;
+
 
     @Override
     public void show() {
         batch = new SpriteBatch();
+        Gdx.input.setInputProcessor(this);
 
-        audioManager = new AudioEffectManager(
-                Gdx.files.internal("./audio/song/SECRET BOSS_muffled.mp3"),
-                Gdx.files.internal("./audio/song/SECRET BOSS.mp3")
-        );
+        glyphEditor = new GlyphEditor(Main.camera, Main.glyphs);
+
+//        audioManager = new AudioEffectManager(
+//                Gdx.files.internal("./audio/song/SECRET BOSS_muffled.mp3"),
+//                Gdx.files.internal("./audio/song/SECRET BOSS.mp3")
+//        );
 
         //particles
         YParticleEffect concentration = new YParticleEffect(true);
@@ -106,6 +117,18 @@ public class FirstScreen implements Screen {
         downFade.setAlpha(0f);
         downFade.setY(-200);
         fadeGlyphs = new Array<>(new Glyph[]{upFade, downFade});
+
+        //LV selections
+        levelScroll = new Glyph(new Texture("./LevelScroll.png"), 0, 0, true);
+        levelInfo = new Glyph(new Texture("./LevelInfo.png"), 0, 0, true);
+        levelDifficulties =  new Glyph(new Texture("./LevelDifficulties.png"), 0, 0, true);
+        levelCard = new Glyph(new Texture("./LevelCard.png"), 0, 0, true);
+        levelScroll.setX(-600f);
+        levelScroll.setY(50f);
+        levelInfo.setX(300f);
+        levelInfo.setY(1500f);
+        levelDifficulties.setX(520f);
+        levelDifficulties.setY(-400f);
 
         playMenuRect = new Glyph(new Texture("./ui/menuRect.png"), -1000, -1000, true);
         playArrow = new Glyph(new Texture("./ui/playButton.png"), -1000, -1000, true);
@@ -160,14 +183,14 @@ public class FirstScreen implements Screen {
         door_open_close.play();
 
         //Sound visualization (door open)
-        eventManager.addEvent(new Event(2.4f, () -> {
+        eventManager.addEvent(new Event(2.4f, () -> { // Timing changed from 2f
             monitor_on.play();
             cameraManager.shake(0.2f, 3f, 0.0025f);
-            animationManager.animateMove(soundCover, soundCover.getX() + 400, soundCover.getY(), 0.25f, Easing.LINEAR);
+            animationManager.animateMove(soundCover, soundCover.getX() + 400, soundCover.getY(), 0.25f,Easing.LINEAR);
         }));
-        eventManager.addEvent(new Event(2.65f, () -> {
+        eventManager.addEvent(new Event(2.65f, () -> { // Timing changed from 2.25f
             soundCover.setX(soundCover.getX() - 800);
-            animationManager.animateMove(soundCover, soundCover.getX() + 400, soundCover.getY(), 0.4f, Easing.LINEAR);
+            animationManager.animateMove(soundCover, soundCover.getX() + 400, soundCover.getY(), 0.4f,Easing.LINEAR);
         }));
         //Keyboard slide down
         eventManager.addEvent(new Event(3f, () -> {
@@ -185,7 +208,7 @@ public class FirstScreen implements Screen {
 
         //Start focus on logo - move everything away, sound start transition
         eventManager.addEvent(new Event(8f, () -> {
-            audioManager.startTransition(5f, 0.005f, 0.5f, 13f, false);
+            // audioManager.startTransition(5f, 0.005f, 0.5f, 13f, false); // Commented out audioManager call
             float factor = 3f;
             animationManager.animateScale(keyboard, keyboard.getScaleX() * factor, keyboard.getScaleY() * factor, 4f,Easing.EASE_IN_OUT_QUAD);
             animationManager.animateMove(keyboard, keyboard.getX() + 1000, keyboard.getY() + 180, 4f,Easing.EASE_IN_OUT_QUAD);
@@ -206,9 +229,9 @@ public class FirstScreen implements Screen {
             shaderManager.setPunch(1.0f);
             concentration.start();
             concentration2.start();
-            animationManager.animatePulse(logo, 220, 1.05f); //TODO: REPLACE WITH ACTUAL BASS DETECTION
-            animationManager.animatePulse(logoLexi, 220, 1.05f);
-            animationManager.animatePulse(logoFlux, 220, 1.05f);
+            //animationManager.animatePulse(logo, 220, 1.05f); //TODO: REPLACE WITH ACTUAL BASS DETECTION
+            //animationManager.animatePulse(logoLexi, 220, 1.05f);
+            //animationManager.animatePulse(logoFlux, 220, 1.05f);
             animationManager.animateFade(flash, 1f, 0.5f,Easing.EASE_IN_OUT_EXPO);
             parallaxManager.addLayer(bg, 0.02f, 0.1f);
         }));
@@ -253,7 +276,7 @@ public class FirstScreen implements Screen {
         @Override
         public void render(float delta) {
             // --- Update logic ---
-            audioManager.update(delta);
+            // audioManager.update(delta); // Commented out audioManager call
             cameraManager.update(delta);
             parallaxManager.update(delta);
 
@@ -278,15 +301,24 @@ public class FirstScreen implements Screen {
                         animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectOriginY, 0.3f, Easing.EASE_IN_OUT_QUINT);
                         animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.5f, Easing.EASE_IN_OUT_QUINT);
                         animationManager.animateRotation(playArrow, -5f, 0.5f, Easing.EASE_IN_OUT_BACK);
+                        animationManager.animateScale(logo, 0.3f, 0.3f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                        animationManager.animateScale(logoLexi, 0.35f, 0.35f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                        animationManager.animateScale(logoFlux, 0.25f, 0.25f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                         eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
+                            playMenuRect.setVisible(false);
                             animationManager.animateMove(playArrow, playArrow.getX() - 1500, playArrow.getY(), 1f, Easing.EASE_IN_OUT_QUINT);
                             eventManager.addEvent(new Event(Main.timePassed + 0.2f, () -> {
                                 playMenuRect.setAlpha(0f);
-                                animationManager.animateMove(logo, -140, 670, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                playMenuRect.setVisible(true);
+                                animationManager.animateMove(logo, -192.5f, 715, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                animationManager.animateMove(logoLexi, 41, 940, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                animationManager.animateMove(logoFlux, -121, 750, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                //LV menus
+                                animationManager.animateMove(levelScroll, 20f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                animationManager.animateMove(levelInfo, 406.5f, 345f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                animationManager.animateMove(levelDifficulties, 485f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 mainButton.setY(670);
                                 mainButton.setX(-140);
-                                animationManager.animateMove(logoLexi, logoLexi.getX() + 1000, logoLexi.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
-                                animationManager.animateMove(logoFlux, logoFlux.getX() + 1000, logoFlux.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 eventManager.addEvent(new Event(Main.timePassed + 1f, () -> {
                                     isInMainMenu = false;
                                 }));
@@ -325,12 +357,18 @@ public class FirstScreen implements Screen {
                     animationManager.animateRotation(playArrow, 0, 0.5f, Easing.EASE_IN_OUT_BACK);
                     animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.5f, Easing.EASE_IN_OUT_QUINT);
                     animationManager.animateMove(logo, playMenuRect.getX() - 5f, playMenuRect.getY() - 50, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateScale(logo, 0.45f, 0.45f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateScale(logoLexi, 0.5f, 0.5f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateScale(logoFlux, 0.4f, 0.4f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateMove(logoLexi, logoLexi.getX() - 850, logoLexi.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateMove(logoFlux, logoFlux.getX() - 850, logoFlux.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateMove(levelScroll, -600f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateMove(levelInfo, 300f, 1500f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateMove(levelDifficulties, 520f, -400f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                     mainButton.setY(playMenuRect.getY() - 5f);
                     mainButton.setX(playMenuRect.getX() - 50);
                     eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
                         animationManager.animateMove(playArrow, playArrow.getX() + 1500, playArrow.getY(), 1f, Easing.EASE_IN_OUT_QUINT);
-                        animationManager.animateMove(logoLexi, logoLexi.getX() - 1000, logoLexi.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
-                        animationManager.animateMove(logoFlux, logoFlux.getX() - 1000, logoFlux.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
                         eventManager.addEvent(new Event(Main.timePassed + 0.2f, () -> {
                             eventManager.addEvent(new Event(Main.timePassed + 1f, () -> {
                                 playMenuRect.setAlpha(1f);
@@ -357,6 +395,12 @@ public class FirstScreen implements Screen {
                 eff.update(delta);
                 eff.draw(batch);
             }
+
+            // Render the glyph editor UI
+            if (glyphEditor != null) {
+                glyphEditor.render(batch, font);
+            }
+
             batch.end();
 
             // --- End FBO rendering and apply shaders to screen ---
@@ -392,7 +436,66 @@ public class FirstScreen implements Screen {
     public void dispose() {
         // Destroy screen's assets here.
         batch.dispose();
-        audioManager.dispose();
+        // audioManager.dispose(); // Commented out audioManager call
         font.dispose();
+    }
+
+    // --- InputProcessor Methods ---
+
+    @Override
+    public boolean keyDown(int keycode) {
+        if (glyphEditor != null && glyphEditor.keyDown(keycode)) {
+            return true;
+        }
+        // other key down logic for the screen can go here
+        return false;
+    }
+
+    @Override
+    public boolean keyUp(int keycode) {
+        return false;
+    }
+
+    @Override
+    public boolean keyTyped(char character) {
+        return false;
+    }
+
+    @Override
+    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+        if (glyphEditor != null && glyphEditor.touchDown(screenX, screenY, pointer, button)) {
+            return true;
+        }
+        // other touch down logic for the screen can go here
+        return false;
+    }
+
+    @Override
+    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+        return false;
+    }
+
+    @Override
+    public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
+        return false;
+    }
+
+    @Override
+    public boolean touchDragged(int screenX, int screenY, int pointer) {
+        if (glyphEditor != null && glyphEditor.touchDragged(screenX, screenY, pointer)) {
+            return true;
+        }
+        // other touch dragged logic for the screen can go here
+        return false;
+    }
+
+    @Override
+    public boolean mouseMoved(int screenX, int screenY) {
+        return false;
+    }
+
+    @Override
+    public boolean scrolled(float amountX, float amountY) {
+        return false;
     }
 }

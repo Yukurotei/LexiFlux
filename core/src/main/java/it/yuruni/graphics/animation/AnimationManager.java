@@ -100,6 +100,46 @@ public class AnimationManager {
     }
 
     /**
+     * Stops any pulsing animations on the specified Glyph and restores its scale
+     * to the value it had before the pulse began.
+     * @param target The Glyph to stop pulsing.
+     */
+    public void stopPulsing(Glyph target) {
+        for (int i = animations.size - 1; i >= 0; i--) {
+            Animation anim = animations.get(i);
+            if (anim.getAnimatedObject() == target && anim.isPulseAnimation) {
+                // Restore the original scale
+                target.setScaleX(anim.startScaleX);
+                target.setScaleY(anim.startScaleY);
+
+                // Stop and free the animation
+                animations.removeIndex(i);
+                animationPool.free(anim);
+            }
+        }
+    }
+
+    /**
+     * Stops any pulsing animations on the specified Glyph3D and restores its scale
+     * to the value it had before the pulse began.
+     * @param target The Glyph3D to stop pulsing.
+     */
+    public void stopPulsing(Glyph3D target) {
+        for (int i = animations.size - 1; i >= 0; i--) {
+            Animation anim = animations.get(i);
+            if (anim.getAnimatedObject() == target && anim.isPulseAnimation) {
+                // Restore the original scale
+                target.dimension.x = anim.startScaleX;
+                target.dimension.y = anim.startScaleY;
+
+                // Stop and free the animation
+                animations.removeIndex(i);
+                animationPool.free(anim);
+            }
+        }
+    }
+
+    /**
      * Immediately stops and removes all animations running on the specified glyph.
      * @param target The glyph whose animations should be stopped.
      */

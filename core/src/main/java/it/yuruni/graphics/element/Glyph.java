@@ -20,6 +20,7 @@ public class Glyph {
     protected float rotation = 0f;
     protected Rectangle hitbox;
     protected boolean isVisible;
+    protected Color color = Color.WHITE; // New field for tinting
     private float frameTime = 0.1f;
     private float animationTimer = 0f;
     private int currentFrame = 0;
@@ -51,6 +52,7 @@ public class Glyph {
         this.x = x;
         this.y = y;
         this.isVisible = true;
+        this.color = Color.WHITE; // Initialize color in constructor
         this.hitbox = new Rectangle();
         updateHitbox();
         if (addToQueue) Main.glyphs.add(this);
@@ -67,8 +69,8 @@ public class Glyph {
         Texture currentTexture = (textures != null && !textures.isEmpty()) ? textures.get(currentFrame) : texture;
         if (currentTexture == null) return;
 
-        Color originalColor = batch.getColor();
-        batch.setColor(originalColor.r, originalColor.g, originalColor.b, alpha);
+        Color originalBatchColor = batch.getColor(); // Store original batch color
+        batch.setColor(color.r, color.g, color.b, alpha); // Apply glyph's color and alpha
 
         float width = currentTexture.getWidth();
         float height = currentTexture.getHeight();
@@ -84,7 +86,7 @@ public class Glyph {
                 0, 0, (int) width, (int) height,
                 false, false);
 
-        batch.setColor(originalColor);
+        batch.setColor(originalBatchColor); // Restore original batch color
     }
 
     /**
@@ -282,6 +284,30 @@ public class Glyph {
         return this.hitbox.overlaps(other.getHitbox());
     }
 
+
+    /**
+     *
+     * @return the bounding rectangle of the glyph for collision detection and interaction.
+     */
+    public Rectangle getBoundingRectangle() {
+        return hitbox;
+    }
+
+    /**
+     *
+     * @param color the new color tint for the glyph. Alpha will still be controlled by `setAlpha()`.
+     */
+    public void setColor(Color color) {
+        this.color = color;
+    }
+
+    /**
+     *
+     * @return the current color tint of the glyph.
+     */
+    public Color getColor() {
+        return color;
+    }
 
     public float getWidth() {
         return this.texture.getWidth();
