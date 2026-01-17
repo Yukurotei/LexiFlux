@@ -23,6 +23,8 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import it.yuruni.game.Note;
+import it.yuruni.game.level.Level;
+import it.yuruni.game.level.LevelManager;
 import it.yuruni.graphics.Easing;
 import it.yuruni.graphics.animation.AnimationManager;
 import it.yuruni.graphics.animation.Event;
@@ -55,8 +57,9 @@ public class GameplayScreen implements Screen, InputProcessor {
     private final GlyphLayout layout = new GlyphLayout();
 
 
-    // --- static imports from Main ---
+    // --- Managers ---
     private final AnimationManager animationManager = Main.animationManager;
+    private LevelManager levelManager;
 
     // --- 3D Objects ---
     private Model cubeModel;
@@ -176,7 +179,21 @@ public class GameplayScreen implements Screen, InputProcessor {
         cubeInstance = new ModelInstance(cubeModel);
         cubeInstance.transform.setToTranslation(Main.WIDTH / 2f, Main.HEIGHT / 2f, 400f);
 
-        scheduleNextNote();
+        //scheduleNextNote();
+        //Load test level
+        Level level = new Level("levels/test.lfl");
+        levelManager = new LevelManager(
+            level,
+            activeNotes,
+            noteTextureRegion,
+            rotatedArrowTextures,
+            leftPlayArea,
+            downPlayArea,
+            upPlayArea,
+            rightPlayArea
+        );
+
+        levelManager.start(3f);
     }
 
     private void checkNotes() {
@@ -362,6 +379,7 @@ public class GameplayScreen implements Screen, InputProcessor {
         dispose();
     }
 
+    /*
     private void spawnRandomNote() {
         // 1. Select random lane
         Note.Lane lane;
@@ -442,6 +460,7 @@ public class GameplayScreen implements Screen, InputProcessor {
             scheduleNextNote(); // Schedule the next one
         }));
     }
+     */
 
     @Override
     public void dispose() {

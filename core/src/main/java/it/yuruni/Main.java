@@ -49,7 +49,7 @@ public class Main extends Game {
         viewport = new FitViewport(WIDTH, HEIGHT, camera);
 
         startTime = TimeUtils.nanoTime();
-        setScreen(new FirstScreen());
+        setScreen(new GameplayScreen());
     }
 
     @Override

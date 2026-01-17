@@ -3,6 +3,7 @@ package it.yuruni.game.level;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import it.yuruni.game.Note;
+import it.yuruni.game.NoteData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,90 +12,116 @@ public class Level {
     private String name;
     private String artist;
     private float bpm;
-    private String backgroundPath;
+    private String audioFile;
+    private String backgroundImage;
     private int difficulty;
 
     private final List<NoteData> notes = new ArrayList<>();
 
     public Level(String lflFilePath) {
+        loadFromFile(lflFilePath);
+    }
+
+    private void loadFromFile(String lflFilePath) {
         FileHandle handle = Gdx.files.internal(lflFilePath);
+        if (!handle.exists()) {
+            Gdx.app.error("Level", "File not found: " + lflFilePath);
+            return;
+        }
+
         String fileContent = handle.readString();
         String[] lines = fileContent.split("\\r?\\n");
 
-        boolean readingNotes = false;
+        String currentSection = "";
+
         for (String line : lines) {
-            if (line.trim().isEmpty() || line.startsWith("#")) {
+            line = line.trim();
+
+            // Skip empty lines and comments
+            if (line.isEmpty() || line.startsWith("#")) {
                 continue;
             }
 
-            if (line.trim().equals("[NOTES]")) {
-                readingNotes = true;
+            // Check for section headers
+            if (line.startsWith("[") && line.endsWith("]")) {
+                currentSection = line.substring(1, line.length() - 1).toUpperCase();
                 continue;
             }
 
-            if (readingNotes) {
-                String[] values = line.split(",");
-                if (values.length >= 2) {
-                    try {
-                        float time = Float.parseFloat(values[0].trim());
-                        Note.Lane lane = Note.Lane.valueOf(values[1].trim().toUpperCase());
-                        notes.add(new NoteData(time, lane));
-                    } catch (IllegalArgumentException e) {
-                        Gdx.app.error("LevelLoader", "Failed to parse note line: " + line, e);
-                    }
-                }
-            } else { // Reading metadata
-                String[] parts = line.split(":", 2);
-                if (parts.length == 2) {
-                    String key = parts[0].trim();
-                    String value = parts[1].trim();
-                    switch (key) {
-                        case "Name":
-                            this.name = value;
-                            break;
-                        case "Artist":
-                            this.artist = value;
-                            break;
-                        case "BPM":
-                            this.bpm = Float.parseFloat(value);
-                            break;
-                        case "Background":
-                            this.backgroundPath = value;
-                            break;
-                        case "Difficulty":
-                            this.difficulty = Integer.parseInt(value);
-                            break;
-                    }
-                }
+            // Parse based on current section
+            switch (currentSection) {
+                case "METADATA":
+                    parseMetadata(line);
+                    break;
+                case "NOTES":
+                    parseNote(line);
+                    break;
             }
+        }
+
+        Gdx.app.log("Level", "Loaded level: " + name + " with " + notes.size() + " notes");
+    }
+
+    private void parseMetadata(String line) {
+        String[] parts = line.split(":", 2);
+        if (parts.length != 2) return;
+
+        String key = parts[0].trim();
+        String value = parts[1].trim();
+
+        switch (key) {
+            case "Name":
+                this.name = value;
+                break;
+            case "Artist":
+                this.artist = value;
+                break;
+            case "BPM":
+                try {
+                    this.bpm = Float.parseFloat(value);
+                } catch (NumberFormatException e) {
+                    Gdx.app.error("Level", "Invalid BPM: " + value);
+                }
+                break;
+            case "AudioFile":
+                this.audioFile = value;
+                break;
+            case "BackgroundImage":
+                this.backgroundImage = value;
+                break;
+            case "Difficulty":
+                try {
+                    this.difficulty = Integer.parseInt(value);
+                } catch (NumberFormatException e) {
+                    Gdx.app.error("Level", "Invalid difficulty: " + value);
+                }
+                break;
         }
     }
 
-    public String getName() {
-        return name;
+    private void parseNote(String line) {
+        String[] values = line.split(",");
+        if (values.length < 2) {
+            Gdx.app.error("Level", "Invalid note line: " + line);
+            return;
+        }
+
+        try {
+            float timeMs = Float.parseFloat(values[0].trim());
+            Note.Lane lane = Note.Lane.valueOf(values[1].trim().toUpperCase());
+
+            notes.add(new NoteData(timeMs, lane));
+        } catch (IllegalArgumentException e) {
+            Gdx.app.error("Level", "Failed to parse note: " + line, e);
+        }
     }
 
-    public String getArtist() {
-        return artist;
-    }
-
-    public float getBpm() {
-        return bpm;
-    }
-
-    public String getBackgroundPath() {
-        return backgroundPath;
-    }
-
-    public int getDifficulty() {
-        return difficulty;
-    }
-
-    public List<NoteData> getNotes() {
-        return notes;
-    }
-
-    public void dispose() {
-        // No textures are owned by this class anymore
-    }
+    // Getters
+    public String getName() { return name; }
+    public String getArtist() { return artist; }
+    public float getBpm() { return bpm; }
+    public String getAudioFile() { return audioFile; }
+    public String getBackgroundImage() { return backgroundImage; }
+    public int getDifficulty() { return difficulty; }
+    public List<NoteData> getNotes() { return notes; }
 }

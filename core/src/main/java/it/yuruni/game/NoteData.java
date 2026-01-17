@@ -1,6 +1,4 @@
-package it.yuruni.game.level;
-
-import it.yuruni.game.Note;
+package it.yuruni.game;
 
 public class NoteData {
     public final float time;

@@ -1,0 +1,26 @@
+# LexiFlux Level - Test Level
+# Times are in milliseconds
+
+[Metadata]
+Name: Test Song
+Artist: Your Name
+BPM: 120
+AudioFile: test.mp3
+BackgroundImage: bg.jpg
+Difficulty: 3
+
+[Notes]
+# time(ms), lane
+1000, UP
+1500, DOWN
+2000, LEFT
+2500, RIGHT
+3000, UP
+3500, DOWN
+4000, LEFT
+4500, RIGHT
+5000, UP
+5250, DOWN
+5500, LEFT
+5750, RIGHT
+6000, UP
