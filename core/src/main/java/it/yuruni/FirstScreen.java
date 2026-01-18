@@ -4,13 +4,16 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
@@ -27,6 +30,7 @@ import it.yuruni.graphics.element.Glyph;
 import it.yuruni.graphics.element.TextGlyph;
 import it.yuruni.tools.debug.GlyphEditor;
 import it.yuruni.tools.debug.MouseInspector;
+import it.yuruni.game.level.Level;
 import it.yuruni.game.level.LevelScanner;
 import it.yuruni.ui.Button;
 import it.yuruni.ui.LevelCard;
@@ -74,6 +78,15 @@ public class FirstScreen implements Screen, InputProcessor {
 
     // Level selection
     private LevelCard selectedCard = null;
+    private Level currentLevel = null;
+    private Music currentLevelAudio = null;
+    private Glyph levelBackgroundGlyph = null;
+
+    // Level info display
+    private TextGlyph levelNameText;
+    private TextGlyph levelArtistText;
+    private TextGlyph levelBpmText;
+    private TextGlyph levelDifficultyText;
 
 
     @Override
@@ -165,6 +178,38 @@ public class FirstScreen implements Screen, InputProcessor {
         parameter.color = Color.WHITE;
         font = generator.generateFont(parameter);
         tutorialText = new TextGlyph("Arrow keys to navigate, space to select", font, Main.WIDTH / 2f - 200, Main.HEIGHT / 2f - 400 - 500, true);
+
+        // Initialize level info text glyphs
+        parameter.size = 32;
+        BitmapFont titleFont = generator.generateFont(parameter);
+        parameter.size = 24;
+        BitmapFont infoFont = generator.generateFont(parameter);
+
+        // Create card text font and set on each card
+        parameter.size = 18;
+        BitmapFont cardFont = generator.generateFont(parameter);
+        for (LevelCard card : levelCards) {
+            card.setFont(cardFont);
+        }
+
+        // Position text relative to levelInfo panel (starts off-screen with levelInfo)
+        // levelInfo starts at (300f, 1500f) and moves to (406.5f, 345f)
+        // Text offsets relative to levelInfo position
+        float textOffsetX = 50f;
+        float textStartY = 250f;
+        float textSpacing = 50f;
+
+        levelNameText = new TextGlyph("", titleFont, levelInfo.getX() + textOffsetX, levelInfo.getY() + textStartY, false);
+        levelArtistText = new TextGlyph("", infoFont, levelInfo.getX() + textOffsetX, levelInfo.getY() + textStartY - textSpacing, false);
+        levelBpmText = new TextGlyph("", infoFont, levelInfo.getX() + textOffsetX, levelInfo.getY() + textStartY - textSpacing * 2, false);
+        levelDifficultyText = new TextGlyph("", infoFont, levelInfo.getX() + textOffsetX, levelInfo.getY() + textStartY - textSpacing * 3, false);
+
+        // Initially hide the text
+        levelNameText.setAlpha(0f);
+        levelArtistText.setAlpha(0f);
+        levelBpmText.setAlpha(0f);
+        levelDifficultyText.setAlpha(0f);
+
         generator.dispose();
 
         //Button
@@ -336,6 +381,11 @@ public class FirstScreen implements Screen, InputProcessor {
                                 animationManager.animateMove(slantedScrollPane.getBackground(), 20f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 animationManager.animateMove(levelInfo, 406.5f, 345f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 animationManager.animateMove(levelDifficulties, 482, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                // Move text with levelInfo panel
+                                animationManager.animateMove(levelNameText, 456.5f, 595f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                animationManager.animateMove(levelArtistText, 456.5f, 545f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                animationManager.animateMove(levelBpmText, 456.5f, 495f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                                animationManager.animateMove(levelDifficultyText, 456.5f, 445f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                                 mainButton.setY(670);
                                 mainButton.setX(-140);
                                 eventManager.addEvent(new Event(Main.timePassed + 1f, () -> {
@@ -384,6 +434,22 @@ public class FirstScreen implements Screen, InputProcessor {
                     animationManager.animateMove(slantedScrollPane.getBackground(), -600f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                     animationManager.animateMove(levelInfo, 300f, 1500f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                     animationManager.animateMove(levelDifficulties, 520f, -400f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+
+                    // Move text back off-screen with levelInfo panel
+                    animationManager.animateMove(levelNameText, 350f, 1750f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateMove(levelArtistText, 350f, 1700f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateMove(levelBpmText, 350f, 1650f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateMove(levelDifficultyText, 350f, 1600f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+
+                    // Fade out level info text and background
+                    animationManager.animateFade(levelNameText, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+                    animationManager.animateFade(levelArtistText, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+                    animationManager.animateFade(levelBpmText, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+                    animationManager.animateFade(levelDifficultyText, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+                    if (levelBackgroundGlyph != null) {
+                        animationManager.animateFade(levelBackgroundGlyph, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+                    }
+
                     mainButton.setY(playMenuRect.getY() - 5f);
                     mainButton.setX(playMenuRect.getX() - 50);
                     eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
@@ -409,7 +475,34 @@ public class FirstScreen implements Screen, InputProcessor {
             batch.setProjectionMatrix(Main.camera.combined);
 
             batch.begin();
+
             animationManager.updateAndRenderGlyphs(delta, batch);
+
+            // Render level background with scissor stack clipping to levelInfo bounds
+            if (levelBackgroundGlyph != null && levelBackgroundGlyph.isVisible()) {
+                batch.flush();
+
+                levelBackgroundGlyph.update(delta);
+
+                // Use levelInfo's bounding rectangle for scissor clipping
+                // This automatically accounts for center-origin positioning
+                Rectangle clippingBounds = levelInfo.getBoundingRectangle();
+
+                Rectangle scissors = new Rectangle();
+                ScissorStack.calculateScissors(Main.camera, batch.getTransformMatrix(), clippingBounds, scissors);
+
+                if (ScissorStack.pushScissors(scissors)) {
+                    levelBackgroundGlyph.render(batch);
+                    batch.flush();
+                    ScissorStack.popScissors();
+                }
+            }
+
+            if (levelNameText != null) levelNameText.render(batch);
+            if (levelArtistText != null) levelArtistText.render(batch);
+            if (levelBpmText != null) levelBpmText.render(batch);
+            if (levelDifficultyText != null) levelDifficultyText.render(batch);
+
             for (YParticleEffect eff : Main.particles) {
                 eff.update(delta);
                 eff.draw(batch);
@@ -476,6 +569,14 @@ public class FirstScreen implements Screen, InputProcessor {
         batch.dispose();
         // audioManager.dispose(); // Commented out audioManager call
         font.dispose();
+
+        // Dispose level resources
+        if (currentLevelAudio != null) {
+            currentLevelAudio.dispose();
+        }
+        if (levelBackgroundGlyph != null) {
+            levelBackgroundGlyph.getTexture().dispose();
+        }
     }
 
     // --- Level Selection ---
@@ -498,6 +599,101 @@ public class FirstScreen implements Screen, InputProcessor {
             Gdx.app.log("LevelSelect", "Selected: " + selectedCard.getLevelName() +
                     " by " + selectedCard.getArtist() +
                     " (" + selectedCard.getBpm() + " BPM, Difficulty " + selectedCard.getDifficulty() + ")");
+
+            // Load and display level info
+            loadLevelInfo(selectedCard);
+        }
+    }
+
+    /**
+     * Loads the full level data, audio, and background for the selected card.
+     */
+    private void loadLevelInfo(LevelCard card) {
+        // Dispose previous resources
+        if (currentLevelAudio != null) {
+            currentLevelAudio.dispose();
+            currentLevelAudio = null;
+        }
+        if (levelBackgroundGlyph != null) {
+            levelBackgroundGlyph.getTexture().dispose();
+            levelBackgroundGlyph = null;
+        }
+
+        try {
+            // Load the full level object
+            currentLevel = new Level(card.getLevelPath());
+
+            // Load audio file (but don't play it)
+            String audioPath = currentLevel.getAudioFile();
+            if (audioPath != null && !audioPath.isEmpty()) {
+                String fullAudioPath = "audio/song/" + audioPath;
+                if (!Gdx.files.internal(fullAudioPath).exists()) {
+                    Gdx.app.error("LevelSelect", "Audio file does not exist: " + fullAudioPath);
+                } else {
+                    try {
+                        currentLevelAudio = Gdx.audio.newMusic(Gdx.files.internal(fullAudioPath));
+                        Gdx.app.log("LevelSelect", "Loaded audio: " + audioPath);
+                    } catch (Exception e) {
+                        Gdx.app.error("LevelSelect", "Failed to load audio: " + audioPath, e);
+                    }
+                }
+            }
+
+            // Load background image and create glyph
+            String bgPath = currentLevel.getBackgroundImage();
+            if (bgPath != null && !bgPath.isEmpty()) {
+                String fullPath = "sampleBGs/" + bgPath;
+                if (!Gdx.files.internal(fullPath).exists()) {
+                    Gdx.app.error("LevelSelect", "Background file does not exist: " + fullPath);
+                } else {
+                    try {
+                        Texture bgTexture = new Texture(Gdx.files.internal(fullPath));
+
+                        levelBackgroundGlyph = new Glyph(bgTexture, -1000, -1000, false);
+                        float levelCenterX = levelInfo.getX() + levelInfo.getWidth() / 2f;
+                        float levelCenterY = levelInfo.getY() + levelInfo.getHeight() / 2f;
+                        float bgW = levelBackgroundGlyph.getWidth();
+                        float bgH = levelBackgroundGlyph.getHeight();
+                        float bgX = levelCenterX - bgW / 2f;
+                        float bgY = levelCenterY - bgH / 2f;
+                        levelBackgroundGlyph.setX(bgX);
+                        levelBackgroundGlyph.setY(bgY);
+                        /*
+                        float targetWidth = levelInfo.getWidth() * levelInfo.getScaleX();
+                        float targetHeight = levelInfo.getHeight() * levelInfo.getScaleY();
+                        levelBackgroundGlyph.setScaleX(targetWidth / levelInfo.getWidth());
+                        levelBackgroundGlyph.setScaleY(targetHeight / levelInfo.getHeight());
+                         */
+                        float scale = Math.max(levelInfo.getWidth() / levelBackgroundGlyph.getWidth(), levelInfo.getHeight() / levelBackgroundGlyph.getHeight());
+                        levelBackgroundGlyph.setScaleX(scale);
+                        levelBackgroundGlyph.setScaleY(scale);
+                        levelBackgroundGlyph.setAlpha(0f);
+                        Gdx.app.log("LevelSelect", "Loaded background: " + bgPath +
+                                " | Pos: (" + levelBackgroundGlyph.getX() + ", " + levelBackgroundGlyph.getY() + ")" +
+                                " | Scale: (" + levelBackgroundGlyph.getScaleX() + ", " + levelBackgroundGlyph.getScaleY() + ")");
+
+                        // Fade in the background
+                        animationManager.animateFade(levelBackgroundGlyph, 1f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+                    } catch (Exception e) {
+                        Gdx.app.error("LevelSelect", "Failed to load background: " + bgPath, e);
+                    }
+                }
+            }
+
+            // Update text displays
+            levelNameText.setText(currentLevel.getName());
+            levelArtistText.setText("by " + currentLevel.getArtist());
+            levelBpmText.setText("BPM: " + (int)currentLevel.getBpm());
+            levelDifficultyText.setText("Difficulty: " + currentLevel.getDifficulty());
+
+            // Fade in the text
+            animationManager.animateFade(levelNameText, 1f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+            animationManager.animateFade(levelArtistText, 1f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+            animationManager.animateFade(levelBpmText, 1f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+            animationManager.animateFade(levelDifficultyText, 1f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+
+        } catch (Exception e) {
+            Gdx.app.error("LevelSelect", "Failed to load level: " + card.getLevelPath(), e);
         }
     }
 

@@ -1,8 +1,11 @@
 package it.yuruni.ui;
 
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import it.yuruni.Main;
 import it.yuruni.graphics.Easing;
+import it.yuruni.graphics.element.TextGlyph;
 
 /**
  * A scroll pane item representing a playable level.
@@ -15,6 +18,8 @@ public class LevelCard extends ScrollPaneItem {
     private final String artist;
     private final float bpm;
     private final int difficulty;
+
+    private TextGlyph nameText;
 
     private boolean isSelected = false;
 
@@ -46,6 +51,31 @@ public class LevelCard extends ScrollPaneItem {
         this.artist = artist;
         this.bpm = bpm;
         this.difficulty = difficulty;
+    }
+
+    /**
+     * Sets the font for the level name text display.
+     * Call this after creating the card to enable text rendering.
+     */
+    public void setFont(BitmapFont font) {
+        // Create text glyph with level name, positioned relative to card
+        // Don't add to Main.glyphs queue - we'll render it manually
+        nameText = new TextGlyph(levelName, font, 0, 0, false);
+        updateTextPosition();
+    }
+
+    /**
+     * Updates the text position to match the card position.
+     */
+    private void updateTextPosition() {
+        if (nameText != null) {
+            // Position text centered on the card
+            float textX = getX() + (getWidth() * getScaleX() / 2f) - 50f; // Offset to center roughly
+            float textY = getY() + (getHeight() * getScaleY() / 2f);
+            nameText.setX(textX);
+            nameText.setY(textY);
+            nameText.setAlpha(getAlpha());
+        }
     }
 
     /**
@@ -106,5 +136,22 @@ public class LevelCard extends ScrollPaneItem {
 
     public int getDifficulty() {
         return difficulty;
+    }
+
+    @Override
+    public void update(float delta) {
+        super.update(delta);
+        if (nameText != null) {
+            updateTextPosition();
+            nameText.update(delta);
+        }
+    }
+
+    @Override
+    public void render(SpriteBatch batch) {
+        super.render(batch);
+        if (nameText != null) {
+            nameText.render(batch);
+        }
     }
 }

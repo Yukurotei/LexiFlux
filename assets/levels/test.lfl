@@ -6,7 +6,7 @@ Name: Test Song
 Artist: Your Name
 BPM: 120
 AudioFile: test.mp3
-BackgroundImage: bg.jpg
+BackgroundImage: pic.jpg
 Difficulty: 3
 
 [Notes]
