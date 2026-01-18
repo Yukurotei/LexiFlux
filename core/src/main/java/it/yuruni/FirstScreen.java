@@ -7,15 +7,22 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import it.yuruni.audio.AudioEffectManager;
 
@@ -50,6 +57,12 @@ public class FirstScreen implements Screen, InputProcessor {
     private final EventManager eventManager = Main.eventManager;
     private AudioEffectManager audioManager;
 
+    private ShaderProgram maskShader;
+    private com.badlogic.gdx.graphics.glutils.FrameBuffer maskFbo;
+    private ShaderProgram alphaMaskShader;
+
+    private Glyph bg;
+    private Map<String, Texture> backgroundCache;
     private TextGlyph tutorialText;
     private Button mainButton;
     private Glyph playMenuRect;
@@ -113,7 +126,7 @@ public class FirstScreen implements Screen, InputProcessor {
         concentration2.scaleEffect(3);
 
         //Textures
-        Glyph bg = new Glyph(ElementUtils.resizeTo(new Texture("./sampleBGs/bg.png"), 120), -192, -108, true);
+        bg = new Glyph(new Texture("./sampleBGs/bg.png"), -192, -108, true);
         bg.setAlpha(0f);
 
         Glyph glyph = new Glyph(new Texture("./logo/LogoLayout.png"), 0, 0, true);
@@ -154,6 +167,48 @@ public class FirstScreen implements Screen, InputProcessor {
         Array<LevelCard> levelCards = LevelScanner.scanLevels(levelCardTexture, this::selectCard);
         for (LevelCard card : levelCards) {
             slantedScrollPane.addItem(card);
+        }
+
+        // --- Pre-cache all level backgrounds ---
+        backgroundCache = new HashMap<>();
+        List<String> bgPaths = new ArrayList<>();
+        for (LevelCard card : levelCards) {
+            try {
+                Level level = new Level(card.getLevelPath());
+                String bgPath = level.getBackgroundImage();
+                if (bgPath != null && !bgPath.isEmpty()) {
+                    String fullPath = "sampleBGs/" + bgPath;
+                    if (Gdx.files.internal(fullPath).exists() && !backgroundCache.containsKey(bgPath)) {
+                        // Perform resizing using Pixmaps to avoid consumePixmap issues
+                        Pixmap rawPixmap = new Pixmap(Gdx.files.internal(fullPath));
+                        Pixmap pixmap1080 = new Pixmap(1920, 1080, rawPixmap.getFormat());
+                        pixmap1080.setFilter(Pixmap.Filter.NearestNeighbour);
+                        pixmap1080.drawPixmap(rawPixmap, 0, 0, rawPixmap.getWidth(), rawPixmap.getHeight(), 0, 0, 1920, 1080);
+                        rawPixmap.dispose();
+
+                        int finalWidth = (int)(1920 * 1.2);
+                        int finalHeight = (int)(1080 * 1.2);
+                        Pixmap finalPixmap = new Pixmap(finalWidth, finalHeight, pixmap1080.getFormat());
+                        finalPixmap.setFilter(Pixmap.Filter.NearestNeighbour);
+                        finalPixmap.drawPixmap(pixmap1080, 0, 0, pixmap1080.getWidth(), pixmap1080.getHeight(), 0, 0, finalWidth, finalHeight);
+                        pixmap1080.dispose();
+
+                        Texture finalTexture = new Texture(finalPixmap);
+                        finalPixmap.dispose();
+
+                        backgroundCache.put(bgPath, finalTexture);
+                        bgPaths.add(bgPath);
+                    }
+                }
+            } catch (Exception e) {
+                Gdx.app.error("Startup", "Could not read or process level background for: " + card.getLevelPath(), e);
+            }
+        }
+
+        // If we found any backgrounds, pick one at random from the cache for the startup screen.
+        if (!bgPaths.isEmpty()) {
+            String randomBgKey = bgPaths.get(new Random().nextInt(bgPaths.size()));
+            bg.setTexture(backgroundCache.get(randomBgKey));
         }
 
 
@@ -209,6 +264,11 @@ public class FirstScreen implements Screen, InputProcessor {
         levelArtistText.setAlpha(0f);
         levelBpmText.setAlpha(0f);
         levelDifficultyText.setAlpha(0f);
+
+        alphaMaskShader = new ShaderProgram(Gdx.files.internal("shaders/alphamask.vert"), Gdx.files.internal("shaders/alphamask.frag"));
+        if (!alphaMaskShader.isCompiled()) {
+            Gdx.app.error("Shader", "Alpha mask shader compilation failed: " + alphaMaskShader.getLog());
+        }
 
         generator.dispose();
 
@@ -464,6 +524,17 @@ public class FirstScreen implements Screen, InputProcessor {
                 }
             }
 
+            // Synchronize level background with the info panel's transform each frame
+            if (levelBackgroundGlyph != null && levelInfo != null) {
+                // Since the background texture is now cropped to match the info panel,
+                // we can just copy the panel's transform directly.
+                levelBackgroundGlyph.setX(levelInfo.getX());
+                levelBackgroundGlyph.setY(levelInfo.getY());
+                levelBackgroundGlyph.setScaleX(levelInfo.getScaleX());
+                levelBackgroundGlyph.setScaleY(levelInfo.getScaleY());
+                levelBackgroundGlyph.setRotation(levelInfo.getRotation());
+            }
+
             // --- Apply camera effects ---
             cameraManager.applyEffects();
 
@@ -474,28 +545,62 @@ public class FirstScreen implements Screen, InputProcessor {
 
             batch.setProjectionMatrix(Main.camera.combined);
 
+
             batch.begin();
 
             animationManager.updateAndRenderGlyphs(delta, batch);
 
-            // Render level background with scissor stack clipping to levelInfo bounds
-            if (levelBackgroundGlyph != null && levelBackgroundGlyph.isVisible()) {
-                batch.flush();
-
+            // Render background with alpha masking using levelInfo as the mask
+            if (levelBackgroundGlyph != null && levelBackgroundGlyph.isVisible() && levelInfo != null && levelInfo.isVisible()) {
                 levelBackgroundGlyph.update(delta);
 
-                // Use levelInfo's bounding rectangle for scissor clipping
-                // This automatically accounts for center-origin positioning
-                Rectangle clippingBounds = levelInfo.getBoundingRectangle();
+                batch.end(); // End current batch
 
-                Rectangle scissors = new Rectangle();
-                ScissorStack.calculateScissors(Main.camera, batch.getTransformMatrix(), clippingBounds, scissors);
+                // Start batch with alpha mask shader
+                batch.setShader(alphaMaskShader);
+                batch.begin();
 
-                if (ScissorStack.pushScissors(scissors)) {
-                    levelBackgroundGlyph.render(batch);
-                    batch.flush();
-                    ScissorStack.popScissors();
-                }
+                // Bind the mask texture (levelInfo) to texture unit 1
+                levelInfo.getTexture().bind(1);
+
+                // Bind the background texture to texture unit 0 (default)
+                levelBackgroundGlyph.getTexture().bind(0);
+
+                // Set shader uniforms
+                alphaMaskShader.setUniformi("u_texture", 0); // Background texture
+                alphaMaskShader.setUniformi("u_mask", 1);    // Mask texture (levelInfo)
+
+                // Calculate screen positions and scales
+                float bgCenterX = levelBackgroundGlyph.getX();
+                float bgCenterY = levelBackgroundGlyph.getY();
+                float bgWidth = levelBackgroundGlyph.getWidth() * levelBackgroundGlyph.getScaleX();
+                float bgHeight = levelBackgroundGlyph.getHeight() * levelBackgroundGlyph.getScaleY();
+
+                float maskCenterX = levelInfo.getX();
+                float maskCenterY = levelInfo.getY();
+                float maskWidth = levelInfo.getWidth() * levelInfo.getScaleX();
+                float maskHeight = levelInfo.getHeight() * levelInfo.getScaleY();
+
+                // Set offset and scale uniforms for coordinate transformation
+                // Convert from screen space to texture space
+                alphaMaskShader.setUniformf("u_bgOffset", bgCenterX - bgWidth / 2f, bgCenterY - bgHeight / 2f);
+                alphaMaskShader.setUniformf("u_bgScale", bgWidth, bgHeight);
+                alphaMaskShader.setUniformf("u_maskOffset", maskCenterX - maskWidth / 2f, maskCenterY - maskHeight / 2f);
+                alphaMaskShader.setUniformf("u_maskScale", maskWidth, maskHeight);
+
+                // Render the background with the shader
+                levelBackgroundGlyph.render(batch);
+
+                batch.end();
+
+                // Reset shader and restart batch
+                batch.setShader(null);
+                batch.begin();
+            }
+
+            // Render levelInfo frame on top
+            if (levelInfo != null && levelInfo.isVisible()) {
+                levelInfo.render(batch);
             }
 
             if (levelNameText != null) levelNameText.render(batch);
@@ -569,6 +674,7 @@ public class FirstScreen implements Screen, InputProcessor {
         batch.dispose();
         // audioManager.dispose(); // Commented out audioManager call
         font.dispose();
+        alphaMaskShader.dispose();
 
         // Dispose level resources
         if (currentLevelAudio != null) {
@@ -576,6 +682,12 @@ public class FirstScreen implements Screen, InputProcessor {
         }
         if (levelBackgroundGlyph != null) {
             levelBackgroundGlyph.getTexture().dispose();
+        }
+        if (backgroundCache != null) {
+            for (Texture texture : backgroundCache.values()) {
+                texture.dispose();
+            }
+            backgroundCache.clear();
         }
     }
 
@@ -647,30 +759,14 @@ public class FirstScreen implements Screen, InputProcessor {
                     Gdx.app.error("LevelSelect", "Background file does not exist: " + fullPath);
                 } else {
                     try {
-                        Texture bgTexture = new Texture(Gdx.files.internal(fullPath));
+                        Texture rawBgTexture = new Texture(Gdx.files.internal(fullPath));
+                        // Crop the background to match the levelInfo panel's dimensions and aspect ratio.
+                        Texture bgTexture = ElementUtils.cropToMatch(rawBgTexture, levelInfo.getTexture());
+                        rawBgTexture.dispose(); // We no longer need the raw, uncropped texture.
 
-                        levelBackgroundGlyph = new Glyph(bgTexture, -1000, -1000, false);
-                        float levelCenterX = levelInfo.getX() + levelInfo.getWidth() / 2f;
-                        float levelCenterY = levelInfo.getY() + levelInfo.getHeight() / 2f;
-                        float bgW = levelBackgroundGlyph.getWidth();
-                        float bgH = levelBackgroundGlyph.getHeight();
-                        float bgX = levelCenterX - bgW / 2f;
-                        float bgY = levelCenterY - bgH / 2f;
-                        levelBackgroundGlyph.setX(bgX);
-                        levelBackgroundGlyph.setY(bgY);
-                        /*
-                        float targetWidth = levelInfo.getWidth() * levelInfo.getScaleX();
-                        float targetHeight = levelInfo.getHeight() * levelInfo.getScaleY();
-                        levelBackgroundGlyph.setScaleX(targetWidth / levelInfo.getWidth());
-                        levelBackgroundGlyph.setScaleY(targetHeight / levelInfo.getHeight());
-                         */
-                        float scale = Math.max(levelInfo.getWidth() / levelBackgroundGlyph.getWidth(), levelInfo.getHeight() / levelBackgroundGlyph.getHeight());
-                        levelBackgroundGlyph.setScaleX(scale);
-                        levelBackgroundGlyph.setScaleY(scale);
+                        levelBackgroundGlyph = new Glyph(bgTexture, 0, 0, false);
                         levelBackgroundGlyph.setAlpha(0f);
-                        Gdx.app.log("LevelSelect", "Loaded background: " + bgPath +
-                                " | Pos: (" + levelBackgroundGlyph.getX() + ", " + levelBackgroundGlyph.getY() + ")" +
-                                " | Scale: (" + levelBackgroundGlyph.getScaleX() + ", " + levelBackgroundGlyph.getScaleY() + ")");
+                        Gdx.app.log("LevelSelect", "Loaded and processed background: " + bgPath);
 
                         // Fade in the background
                         animationManager.animateFade(levelBackgroundGlyph, 1f, 0.3f, Easing.EASE_IN_OUT_QUAD);
@@ -691,6 +787,12 @@ public class FirstScreen implements Screen, InputProcessor {
             animationManager.animateFade(levelArtistText, 1f, 0.3f, Easing.EASE_IN_OUT_QUAD);
             animationManager.animateFade(levelBpmText, 1f, 0.3f, Easing.EASE_IN_OUT_QUAD);
             animationManager.animateFade(levelDifficultyText, 1f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+
+            // Update the main background by retrieving the pre-cached texture
+            String newBgPath = currentLevel.getBackgroundImage();
+            if (newBgPath != null && backgroundCache.containsKey(newBgPath)) {
+                bg.setTexture(backgroundCache.get(newBgPath));
+            }
 
         } catch (Exception e) {
             Gdx.app.error("LevelSelect", "Failed to load level: " + card.getLevelPath(), e);
@@ -713,6 +815,18 @@ public class FirstScreen implements Screen, InputProcessor {
             int currentIndex = selectedCard != null
                     ? slantedScrollPane.getItemIndex(selectedCard)
                     : -1;
+
+            // Launch gameplay when Enter/Space is pressed
+            if ((keycode == Input.Keys.ENTER || keycode == Input.Keys.SPACE) && selectedCard != null && currentLevel != null) {
+                Gdx.app.log("LevelSelect", "Launching level: " + currentLevel.getName());
+                // Create and switch to gameplay screen with the loaded level and audio
+                GameplayScreen gameplayScreen = new GameplayScreen(currentLevel, currentLevelAudio);
+                ((Main) Gdx.app.getApplicationListener()).setScreen(gameplayScreen);
+
+                // Transfer ownership of music to GameplayScreen - don't dispose it here
+                currentLevelAudio = null;
+                return true;
+            }
 
             if (keycode == Input.Keys.DOWN || keycode == Input.Keys.RIGHT) {
                 // Navigate to next card (or first if nothing selected)

@@ -137,6 +137,71 @@ public final class ElementUtils {
         return rotatedTexture;
     }
 
+    /**
+     * Crops the center of a source texture to match the aspect ratio of a target texture,
+     * and then resizes it to the target's dimensions.
+     *
+     * @param sourceTexture The texture to be cropped and resized.
+     * @param targetTexture The texture whose dimensions and aspect ratio to match.
+     * @return A new Texture, which is a center-cropped and resized version of the source.
+     */
+    public static Texture cropToMatch(Texture sourceTexture, Texture targetTexture) {
+        if (sourceTexture == null || targetTexture == null) {
+            throw new IllegalArgumentException("Textures cannot be null.");
+        }
+
+        TextureData sourceData = sourceTexture.getTextureData();
+        Pixmap sourcePixmap;
+
+        boolean isFile = sourceData instanceof com.badlogic.gdx.graphics.glutils.FileTextureData;
+        if (isFile) {
+            sourcePixmap = new Pixmap(((com.badlogic.gdx.graphics.glutils.FileTextureData) sourceData).getFileHandle());
+        } else {
+            if (!sourceData.isPrepared()) {
+                sourceData.prepare();
+            }
+            sourcePixmap = sourceData.consumePixmap();
+        }
+
+        int targetWidth = targetTexture.getWidth();
+        int targetHeight = targetTexture.getHeight();
+        float targetAspectRatio = (float) targetWidth / targetHeight;
+
+        int sourceWidth = sourcePixmap.getWidth();
+        int sourceHeight = sourcePixmap.getHeight();
+        float sourceAspectRatio = (float) sourceWidth / sourceHeight;
+
+        int srcX = 0;
+        int srcY = 0;
+        int srcWidth = sourceWidth;
+        int srcHeight = sourceHeight;
+
+        // Calculate crop rectangle to match target aspect ratio
+        if (sourceAspectRatio > targetAspectRatio) { // Source is wider
+            srcWidth = (int) (sourceHeight * targetAspectRatio);
+            srcX = (sourceWidth - srcWidth) / 2;
+        } else if (sourceAspectRatio < targetAspectRatio) { // Source is taller
+            srcHeight = (int) (sourceWidth / targetAspectRatio);
+            srcY = (sourceHeight - srcHeight) / 2;
+        }
+
+        Pixmap destPixmap = new Pixmap(targetWidth, targetHeight, sourcePixmap.getFormat());
+        destPixmap.setFilter(Pixmap.Filter.NearestNeighbour);
+
+        // Draw the cropped part of the source onto the destination, resizing it in the process.
+        destPixmap.drawPixmap(sourcePixmap,
+                srcX, srcY, srcWidth, srcHeight,
+                0, 0, targetWidth, targetHeight
+        );
+
+        Texture resultTexture = new Texture(destPixmap);
+
+        sourcePixmap.dispose();
+        destPixmap.dispose();
+
+        return resultTexture;
+    }
+
 
     /**
      * Wraps text by inserting newline characters after a specified number of words.

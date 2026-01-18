@@ -237,7 +237,9 @@ public class Glyph {
      */
     public void setTexture(Texture texture) {
         this.texture = texture;
-        this.textures = null;
+        if (this.textures != null) {
+            this.textures.clear();
+        }
     }
 
     /**

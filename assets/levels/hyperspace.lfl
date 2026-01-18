@@ -10,18 +10,18 @@ BackgroundImage: spacePixel.png
 Difficulty: 6
 
 [Notes]
-# time(ms), lane
-600, UP
-900, DOWN
-1200, LEFT
-1500, RIGHT
-1800, UP
-2100, DOWN
-2400, LEFT
-2700, RIGHT
-3000, UP
-3300, DOWN
-3600, LEFT
-3900, RIGHT
-4200, UP
-4500, DOWN
+# time(ms), lane, key
+600, UP, W
+900, DOWN, S
+1200, LEFT, A
+1500, RIGHT, D
+1800, UP, E
+2100, DOWN, X
+2400, LEFT, Q
+2700, RIGHT, C
+3000, UP, R
+3300, DOWN, F
+3600, LEFT, Z
+3900, RIGHT, V
+4200, UP, T
+4500, DOWN, G

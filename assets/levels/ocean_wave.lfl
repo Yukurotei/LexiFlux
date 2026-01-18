@@ -10,12 +10,12 @@ BackgroundImage: newspaper.jpg
 Difficulty: 1
 
 [Notes]
-# time(ms), lane
-2000, UP
-3000, DOWN
-4000, LEFT
-5000, RIGHT
-6000, UP
-7000, DOWN
-8000, LEFT
-9000, RIGHT
+# time(ms), lane, key
+2000, UP, W
+3000, DOWN, S
+4000, LEFT, A
+5000, RIGHT, D
+6000, UP, E
+7000, DOWN, X
+8000, LEFT, Q
+9000, RIGHT, C

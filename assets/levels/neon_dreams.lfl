@@ -10,16 +10,16 @@ BackgroundImage: bgg.png
 Difficulty: 5
 
 [Notes]
-# time(ms), lane
-500, UP
-750, DOWN
-1000, LEFT
-1250, RIGHT
-1500, UP
-1750, DOWN
-2000, LEFT
-2250, RIGHT
-2500, UP
-2750, DOWN
-3000, LEFT
-3250, RIGHT
+# time(ms), lane, key
+500, UP, W
+750, DOWN, S
+1000, LEFT, A
+1250, RIGHT, D
+1500, UP, E
+1750, DOWN, X
+2000, LEFT, Q
+2250, RIGHT, C
+2500, UP, R
+2750, DOWN, F
+3000, LEFT, Z
+3250, RIGHT, V

@@ -1,10 +1,12 @@
 package it.yuruni.graphics.effects;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
+import com.badlogic.gdx.graphics.glutils.GLFrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.ScreenUtils;
 
@@ -33,7 +35,13 @@ public class ShaderManager {
         if (fbo != null) {
             fbo.dispose();
         }
-        fbo = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
+        // Create FBO with stencil buffer for masking operations
+        GLFrameBuffer.FrameBufferBuilder builder = new GLFrameBuffer.FrameBufferBuilder(width, height);
+        builder.addBasicColorTextureAttachment(Pixmap.Format.RGBA8888);
+        builder.addDepthRenderBuffer(GL20.GL_DEPTH_COMPONENT16);
+        builder.addStencilRenderBuffer(GL20.GL_STENCIL_INDEX8);
+        fbo = builder.build();
+        Gdx.app.log("ShaderManager", "Created FBO with stencil buffer: " + width + "x" + height);
         screenCamera.setToOrtho(false, width, height);
     }
 

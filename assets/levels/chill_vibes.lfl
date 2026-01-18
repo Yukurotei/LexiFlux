@@ -10,12 +10,12 @@ BackgroundImage: castle.jpg
 Difficulty: 2
 
 [Notes]
-# time(ms), lane
-1500, UP
-2500, DOWN
-3500, LEFT
-4500, RIGHT
-5500, UP
-6500, DOWN
-7500, LEFT
-8500, RIGHT
+# time(ms), lane, key
+1500, UP, W
+2500, DOWN, S
+3500, LEFT, A
+4500, RIGHT, D
+5500, UP, E
+6500, DOWN, X
+7500, LEFT, Q
+8500, RIGHT, C

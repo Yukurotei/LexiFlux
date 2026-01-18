@@ -3,10 +3,12 @@ package it.yuruni.game;
 public class NoteData {
     public final float time;
     public final Note.Lane lane;
+    public final int keycode;
     // For now, we only have tap notes. We can add type and duration later.
 
-    public NoteData(float time, Note.Lane lane) {
+    public NoteData(float time, Note.Lane lane, int keycode) {
         this.time = time;
         this.lane = lane;
+        this.keycode = keycode;
     }
 }

@@ -1,7 +1,9 @@
 package it.yuruni.game.level;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.files.FileHandle;
+import it.yuruni.game.GameConstants;
 import it.yuruni.game.Note;
 import it.yuruni.game.NoteData;
 
@@ -101,16 +103,26 @@ public class Level {
 
     private void parseNote(String line) {
         String[] values = line.split(",");
-        if (values.length < 2) {
-            Gdx.app.error("Level", "Invalid note line: " + line);
+        if (values.length < 3) {
+            Gdx.app.error("Level", "Invalid note line (expected format: time, lane, key): " + line);
             return;
         }
 
         try {
             float timeMs = Float.parseFloat(values[0].trim());
             Note.Lane lane = Note.Lane.valueOf(values[1].trim().toUpperCase());
+            String keyString = values[2].trim().toUpperCase();
 
-            notes.add(new NoteData(timeMs, lane));
+            // Convert key string to Input.Keys constant
+            int keycode = Input.Keys.valueOf(keyString);
+
+            // Validate that the key is in PLAYABLE_KEYS
+            if (!GameConstants.PLAYABLE_KEYS.contains(keycode)) {
+                Gdx.app.error("Level", "Key '" + keyString + "' is not in PLAYABLE_KEYS list. Skipping note at " + timeMs + "ms");
+                return;
+            }
+
+            notes.add(new NoteData(timeMs, lane, keycode));
         } catch (IllegalArgumentException e) {
             Gdx.app.error("Level", "Failed to parse note: " + line, e);
         }

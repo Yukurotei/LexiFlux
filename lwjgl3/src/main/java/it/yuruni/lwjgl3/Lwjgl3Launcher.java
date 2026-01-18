@@ -43,6 +43,10 @@ public class Lwjgl3Launcher {
         //// are not intended for games that use GL30 (which is compatibility with OpenGL ES 3.0).
         configuration.setOpenGLEmulation(Lwjgl3ApplicationConfiguration.GLEmulation.ANGLE_GLES20, 0, 0);
 
+        //// Enable stencil buffer (8-bit) for stencil masking operations
+        //// setBackBufferConfig(r, g, b, alpha, depth, stencil, samples)
+        configuration.setBackBufferConfig(8, 8, 8, 8, 16, 8, 0);
+
         return configuration;
     }
 }

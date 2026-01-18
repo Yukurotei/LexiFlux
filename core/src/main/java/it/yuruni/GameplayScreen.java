@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
@@ -22,6 +23,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import it.yuruni.game.GameConstants;
 import it.yuruni.game.Note;
 import it.yuruni.game.level.Level;
 import it.yuruni.game.level.LevelManager;
@@ -61,6 +63,10 @@ public class GameplayScreen implements Screen, InputProcessor {
     private final AnimationManager animationManager = Main.animationManager;
     private LevelManager levelManager;
 
+    // --- Level Data ---
+    private final Level level;
+    private final Music music;
+
     // --- 3D Objects ---
     private Model cubeModel;
     private ModelInstance cubeInstance;
@@ -89,14 +95,6 @@ public class GameplayScreen implements Screen, InputProcessor {
     private static final float PERFECT_WINDOW = 50f; // z-axis distance
     private static final float GOOD_WINDOW = 100f;
     private static final float BAD_WINDOW = 150f;
-    private static final List<Integer> PLAYABLE_KEYS = new ArrayList<Integer>() {{
-        add(Input.Keys.Q); add(Input.Keys.W); add(Input.Keys.E); add(Input.Keys.R); add(Input.Keys.T);
-        add(Input.Keys.Y); add(Input.Keys.U); add(Input.Keys.I); add(Input.Keys.O); add(Input.Keys.P);
-        add(Input.Keys.A); add(Input.Keys.S); add(Input.Keys.D); add(Input.Keys.F); add(Input.Keys.G);
-        add(Input.Keys.H); add(Input.Keys.J); add(Input.Keys.K); add(Input.Keys.L); add(Input.Keys.SEMICOLON);
-        add(Input.Keys.Z); add(Input.Keys.X); add(Input.Keys.C); add(Input.Keys.V); add(Input.Keys.B);
-        add(Input.Keys.N); add(Input.Keys.M); add(Input.Keys.COMMA); add(Input.Keys.PERIOD);
-    }};
 
 
     // --- Variables ---
@@ -108,6 +106,11 @@ public class GameplayScreen implements Screen, InputProcessor {
     private boolean isCameraOffset, isInTransition;
     private final float cameraShiftDelay = 0.1f;
 
+    public GameplayScreen(Level level, Music music) {
+        this.level = level;
+        this.music = music;
+        Gdx.app.log("GameplayScreen", "Initialized with level: " + level.getName());
+    }
 
     @Override
     public void show() {
@@ -180,8 +183,7 @@ public class GameplayScreen implements Screen, InputProcessor {
         cubeInstance.transform.setToTranslation(Main.WIDTH / 2f, Main.HEIGHT / 2f, 400f);
 
         //scheduleNextNote();
-        //Load test level
-        Level level = new Level("levels/test.lfl");
+        // Use the level passed in from level selection
         levelManager = new LevelManager(
             level,
             activeNotes,
@@ -193,7 +195,17 @@ public class GameplayScreen implements Screen, InputProcessor {
             rightPlayArea
         );
 
-        levelManager.start(3f);
+        // Start the level with a 3 second countdown
+        float countdownDuration = 3f;
+        levelManager.start(countdownDuration);
+
+        // Schedule music to start after the countdown
+        eventManager.addEvent(new Event(Main.timePassed + countdownDuration, () -> {
+            if (music != null) {
+                music.play();
+                Gdx.app.log("GameplayScreen", "Music started for level: " + level.getName());
+            }
+        }));
     }
 
     private void checkNotes() {
@@ -435,7 +447,7 @@ public class GameplayScreen implements Screen, InputProcessor {
         arrowGlyph.dimension.set(arrowSize, arrowSize);
 
         // Assign a random key
-        int keycode = PLAYABLE_KEYS.get(random.nextInt(PLAYABLE_KEYS.size()));
+        int keycode = GameConstants.PLAYABLE_KEYS.get(random.nextInt(GameConstants.PLAYABLE_KEYS.size()));
 
         // Calculate duration based on a fixed speed
         float speed = 1050f; // units per second
@@ -475,6 +487,11 @@ public class GameplayScreen implements Screen, InputProcessor {
         arrowTexture.dispose();
         for (TextureRegion region : rotatedArrowTextures.values()) {
             region.getTexture().dispose();
+        }
+        // Stop and dispose music
+        if (music != null) {
+            music.stop();
+            music.dispose();
         }
     }
 

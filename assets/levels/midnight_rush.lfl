@@ -10,18 +10,18 @@ BackgroundImage: gasg.jpg
 Difficulty: 8
 
 [Notes]
-# time(ms), lane
-400, UP
-600, DOWN
-800, LEFT
-1000, RIGHT
-1200, UP
-1400, DOWN
-1600, LEFT
-1800, RIGHT
-2000, UP
-2200, DOWN
-2400, LEFT
-2600, RIGHT
-2800, UP
-3000, DOWN
+# time(ms), lane, key
+400, UP, W
+600, DOWN, S
+800, LEFT, A
+1000, RIGHT, D
+1200, UP, E
+1400, DOWN, X
+1600, LEFT, Q
+1800, RIGHT, C
+2000, UP, R
+2200, DOWN, F
+2400, LEFT, Z
+2600, RIGHT, V
+2800, UP, T
+3000, DOWN, G

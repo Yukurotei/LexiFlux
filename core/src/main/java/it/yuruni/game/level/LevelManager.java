@@ -1,6 +1,5 @@
 package it.yuruni.game.level;
 
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
@@ -13,7 +12,6 @@ import it.yuruni.graphics.animation.Event;
 import it.yuruni.graphics.animation.EventManager;
 import it.yuruni.graphics.element.Glyph3D;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -41,16 +39,6 @@ public class LevelManager {
     // Textures
     private final TextureRegion noteTexture;
     private final Map<Note.Lane, TextureRegion> arrowTextures;
-
-    // Playable keys
-    private static final List<Integer> PLAYABLE_KEYS = new ArrayList<Integer>() {{
-        add(Input.Keys.Q); add(Input.Keys.W); add(Input.Keys.E); add(Input.Keys.R); add(Input.Keys.T);
-        add(Input.Keys.Y); add(Input.Keys.U); add(Input.Keys.I); add(Input.Keys.O); add(Input.Keys.P);
-        add(Input.Keys.A); add(Input.Keys.S); add(Input.Keys.D); add(Input.Keys.F); add(Input.Keys.G);
-        add(Input.Keys.H); add(Input.Keys.J); add(Input.Keys.K); add(Input.Keys.L); add(Input.Keys.SEMICOLON);
-        add(Input.Keys.Z); add(Input.Keys.X); add(Input.Keys.C); add(Input.Keys.V); add(Input.Keys.B);
-        add(Input.Keys.N); add(Input.Keys.M); add(Input.Keys.COMMA); add(Input.Keys.PERIOD);
-    }};
 
     private final Random random = new Random();
     private int nextNoteIndex = 0;
@@ -144,8 +132,8 @@ public class LevelManager {
         Glyph3D arrowGlyph = new Glyph3D(arrowTexture, new Vector3(startX, startY, START_Z - 1f), true);
         arrowGlyph.dimension.set(ARROW_SIZE, ARROW_SIZE);
 
-        // Assign random key
-        int keycode = PLAYABLE_KEYS.get(random.nextInt(PLAYABLE_KEYS.size()));
+        // Use the keycode specified in the level file
+        int keycode = noteData.keycode;
 
         // Create note object
         Note note = new Note(noteGlyph, arrowGlyph, noteData.lane, keycode, Main.timePassed, travelTime);

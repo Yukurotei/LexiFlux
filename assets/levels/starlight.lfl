@@ -10,14 +10,14 @@ BackgroundImage: interstellar-space-pixel.png
 Difficulty: 4
 
 [Notes]
-# time(ms), lane
-1000, UP
-1500, RIGHT
-2000, DOWN
-2500, LEFT
-3000, UP
-3500, RIGHT
-4000, DOWN
-4500, LEFT
-5000, UP
-5500, DOWN
+# time(ms), lane, key
+1000, UP, W
+1500, RIGHT, L
+2000, DOWN, S
+2500, LEFT, A
+3000, UP, E
+3500, RIGHT, K
+4000, DOWN, X
+4500, LEFT, Z
+5000, UP, R
+5500, DOWN, D
