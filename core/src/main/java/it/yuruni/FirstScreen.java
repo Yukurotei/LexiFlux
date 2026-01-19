@@ -110,10 +110,10 @@ public class FirstScreen implements Screen, InputProcessor {
         glyphEditor = new GlyphEditor(Main.camera, Main.glyphs);
         mouseInspector = new MouseInspector(Main.viewport);
 
-//        audioManager = new AudioEffectManager(
-//                Gdx.files.internal("./audio/song/SECRET BOSS_muffled.mp3"),
-//                Gdx.files.internal("./audio/song/SECRET BOSS.mp3")
-//        );
+        audioManager = new AudioEffectManager(
+                Gdx.files.internal("./audio/song/SECRET BOSS_muffled.mp3"),
+                Gdx.files.internal("./audio/song/SECRET BOSS.mp3")
+        );
 
         //particles
         YParticleEffect concentration = new YParticleEffect(true);
@@ -327,7 +327,7 @@ public class FirstScreen implements Screen, InputProcessor {
 
         //Start focus on logo - move everything away, sound start transition
         eventManager.addEvent(new Event(8f, () -> {
-            // audioManager.startTransition(5f, 0.005f, 0.5f, 13f, false); // Commented out audioManager call
+            //audioManager.startTransition(5f, 0.005f, 0.5f, 13f, false);
             float factor = 3f;
             animationManager.animateScale(keyboard, keyboard.getScaleX() * factor, keyboard.getScaleY() * factor, 4f,Easing.EASE_IN_OUT_QUAD);
             animationManager.animateMove(keyboard, keyboard.getX() + 1000, keyboard.getY() + 180, 4f,Easing.EASE_IN_OUT_QUAD);
@@ -395,7 +395,7 @@ public class FirstScreen implements Screen, InputProcessor {
         @Override
         public void render(float delta) {
             // --- Update logic ---
-            // audioManager.update(delta); // Commented out audioManager call
+            audioManager.update(delta);
             cameraManager.update(delta);
             parallaxManager.update(delta);
             if (slantedScrollPane != null) {
@@ -670,13 +670,11 @@ public class FirstScreen implements Screen, InputProcessor {
 
     @Override
     public void dispose() {
-        // Destroy screen's assets here.
         batch.dispose();
-        // audioManager.dispose(); // Commented out audioManager call
+        audioManager.dispose();
         font.dispose();
         alphaMaskShader.dispose();
 
-        // Dispose level resources
         if (currentLevelAudio != null) {
             currentLevelAudio.dispose();
         }
@@ -822,6 +820,11 @@ public class FirstScreen implements Screen, InputProcessor {
                 // Create and switch to gameplay screen with the loaded level and audio
                 GameplayScreen gameplayScreen = new GameplayScreen(currentLevel, currentLevelAudio);
                 ((Main) Gdx.app.getApplicationListener()).setScreen(gameplayScreen);
+
+                // Stop main menu music
+                if (audioManager != null) {
+                    audioManager.stop();
+                }
 
                 // Transfer ownership of music to GameplayScreen - don't dispose it here
                 currentLevelAudio = null;

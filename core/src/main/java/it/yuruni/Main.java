@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.utils.TimeUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import it.yuruni.game.level.Level;
 import it.yuruni.graphics.animation.AnimationManager;
 import it.yuruni.graphics.animation.EventManager;
 import it.yuruni.graphics.element.Glyph;

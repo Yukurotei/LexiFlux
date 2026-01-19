@@ -19,3 +19,6 @@ Difficulty: 1
 7000, DOWN, X
 8000, LEFT, Q
 9000, RIGHT, C
+
+[Events]
+5.0: camera_shake, duration=0.1, intensity=5

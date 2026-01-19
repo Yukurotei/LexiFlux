@@ -8,7 +8,9 @@ import it.yuruni.game.Note;
 import it.yuruni.game.NoteData;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Level {
     private String name;
@@ -19,6 +21,7 @@ public class Level {
     private int difficulty;
 
     private final List<NoteData> notes = new ArrayList<>();
+    private final List<LevelEvent> events = new ArrayList<>();
 
     public Level(String lflFilePath) {
         loadFromFile(lflFilePath);
@@ -58,10 +61,13 @@ public class Level {
                 case "NOTES":
                     parseNote(line);
                     break;
+                case "EVENTS":
+                    parseEvent(line);
+                    break;
             }
         }
 
-        Gdx.app.log("Level", "Loaded level: " + name + " with " + notes.size() + " notes");
+        Gdx.app.log("Level", "Loaded level: " + name + " with " + notes.size() + " notes, and " + events.size() + " events.");
     }
 
     private void parseMetadata(String line) {
@@ -136,4 +142,39 @@ public class Level {
     public String getBackgroundImage() { return backgroundImage; }
     public int getDifficulty() { return difficulty; }
     public List<NoteData> getNotes() { return notes; }
+    public List<LevelEvent> getEvents() { return events; }
+
+    private void parseEvent(String line) {
+        String[] parts = line.split(":", 2);
+        if (parts.length != 2) {
+            Gdx.app.error("Level", "Invalid event line format (expected 'time: effect, param=value'): " + line);
+            return;
+        }
+
+        try {
+            float triggerTime = Float.parseFloat(parts[0].trim());
+            String eventDetails = parts[1].trim();
+
+            String[] detailParts = eventDetails.split(",", 2);
+            String effectName = detailParts[0].trim();
+            Map<String, String> parameters = new HashMap<>();
+
+            if (detailParts.length > 1) {
+                String[] paramPairs = detailParts[1].split(",");
+                for (String paramPair : paramPairs) {
+                    String[] kv = paramPair.split("=", 2);
+                    if (kv.length == 2) {
+                        parameters.put(kv[0].trim(), kv[1].trim());
+                    } else {
+                        Gdx.app.error("Level", "Invalid event parameter format: " + paramPair);
+                    }
+                }
+            }
+            events.add(new LevelEvent(triggerTime, effectName, parameters));
+        } catch (NumberFormatException e) {
+            Gdx.app.error("Level", "Invalid trigger time in event: " + line, e);
+        } catch (IllegalArgumentException e) {
+            Gdx.app.error("Level", "Failed to parse event: " + line, e);
+        }
+    }
 }

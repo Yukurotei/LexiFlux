@@ -1,5 +1,7 @@
 package it.yuruni.game.level;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
@@ -29,6 +31,8 @@ public class LevelManager {
     private static final float JUDGEMENT_LINE_Z = 400f;
     private static final float NOTE_SIZE = 150f;
     private static final float ARROW_SIZE = 75f;
+    private static final float APPROACH_START_SIZE = 300f; // Start at 2x the note size
+    private static final float APPROACH_END_SIZE = 150f;   // Shrink to match note size
 
     // Play areas
     private final Rectangle leftPlayArea;
@@ -39,9 +43,9 @@ public class LevelManager {
     // Textures
     private final TextureRegion noteTexture;
     private final Map<Note.Lane, TextureRegion> arrowTextures;
+    private final Texture approachTexture;
 
     private final Random random = new Random();
-    private int nextNoteIndex = 0;
     private float songStartTime = -1f; // Will be set when song actually starts
 
     public LevelManager(Level level, List<Note> activeNotes,
@@ -58,6 +62,8 @@ public class LevelManager {
         this.downPlayArea = downArea;
         this.upPlayArea = upArea;
         this.rightPlayArea = rightArea;
+
+        this.approachTexture = new Texture(Gdx.files.internal("KeycapWireframe.png"));
     }
 
     /**
@@ -132,16 +138,25 @@ public class LevelManager {
         Glyph3D arrowGlyph = new Glyph3D(arrowTexture, new Vector3(startX, startY, START_Z - 1f), true);
         arrowGlyph.dimension.set(ARROW_SIZE, ARROW_SIZE);
 
+        // Create approach circle glyph (positioned behind the note, slightly higher Z)
+        Glyph3D approachGlyph = new Glyph3D(approachTexture, new Vector3(startX, startY, START_Z - 2f), true);
+        approachGlyph.dimension.set(APPROACH_START_SIZE, APPROACH_START_SIZE);
+        approachGlyph.decal.setColor(1f, 1f, 1f, 0.6f); // Semi-transparent white
+
         // Use the keycode specified in the level file
         int keycode = noteData.keycode;
 
         // Create note object
-        Note note = new Note(noteGlyph, arrowGlyph, noteData.lane, keycode, Main.timePassed, travelTime);
+        Note note = new Note(noteGlyph, arrowGlyph, approachGlyph, noteData.lane, keycode, Main.timePassed, travelTime);
         activeNotes.add(note);
 
-        // Animate movement
+        // Animate movement for all glyphs
         animationManager.animateMove(noteGlyph, endX, endY, END_Z, travelTime, Easing.LINEAR);
         animationManager.animateMove(arrowGlyph, endX, endY, END_Z - 1f, travelTime, Easing.LINEAR);
+        animationManager.animateMove(approachGlyph, endX, endY, END_Z - 2f, travelTime, Easing.LINEAR);
+
+        // Animate approach circle shrinking from large to note size
+        animationManager.animateScale(approachGlyph, APPROACH_END_SIZE, APPROACH_END_SIZE, travelTime, Easing.LINEAR);
     }
 
     public Level getLevel() {

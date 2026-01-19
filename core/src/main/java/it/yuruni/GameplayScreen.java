@@ -19,11 +19,11 @@ import com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy;
 import com.badlogic.gdx.graphics.g3d.decals.DecalBatch;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import it.yuruni.game.GameConstants;
 import it.yuruni.game.Note;
 import it.yuruni.game.level.Level;
 import it.yuruni.game.level.LevelManager;
@@ -33,6 +33,7 @@ import it.yuruni.graphics.animation.Event;
 import it.yuruni.graphics.animation.EventManager;
 import it.yuruni.graphics.effects.CameraManager;
 import it.yuruni.graphics.element.Glyph3D;
+import it.yuruni.game.level.LevelEvent;
 import it.yuruni.utils.ElementUtils;
 
 import java.util.ArrayList;
@@ -44,7 +45,6 @@ import java.util.Objects;
 import java.util.Random;
 
 public class GameplayScreen implements Screen, InputProcessor {
-    private CameraInputController controller; //TODO: TEMPORARY, REMOVE
     private PerspectiveCamera cam;
     private CameraManager cameraManager;
     private ModelBatch modelBatch;
@@ -75,9 +75,11 @@ public class GameplayScreen implements Screen, InputProcessor {
     private Texture noteTexture;
     private Texture overlayTexture;
     private Texture arrowTexture;
+    private Texture gameplayBgTexture;
     private Map<Note.Lane, TextureRegion> rotatedArrowTextures;
 
     // --- Elements ---
+    private Glyph3D gameplayBg;
     private Glyph3D leftArrowCover;
     private Glyph3D rightArrowCover;
     private Glyph3D upArrowCover;
@@ -95,6 +97,8 @@ public class GameplayScreen implements Screen, InputProcessor {
     private static final float PERFECT_WINDOW = 50f; // z-axis distance
     private static final float GOOD_WINDOW = 100f;
     private static final float BAD_WINDOW = 150f;
+    private static final float SCROLL_SPEED = 800f; // z-axis units per second
+    private static final float NOTE_BASE_SIZE = 150f;
 
 
     // --- Variables ---
@@ -120,7 +124,7 @@ public class GameplayScreen implements Screen, InputProcessor {
         cam.position.set(Main.WIDTH / 2f, Main.HEIGHT / 2f, 1000f);
         cam.lookAt(Main.WIDTH / 2f, Main.HEIGHT / 2f, 0f);
         cam.near = 1f;
-        cam.far = 5000f;
+        cam.far = 500_000f;
         cam.update();
 
         Gdx.input.setInputProcessor(this);
@@ -152,6 +156,37 @@ public class GameplayScreen implements Screen, InputProcessor {
         // --- Create 3D Glyphs ---
         // Clear any old instances from a previous screen session
         Glyph3D.clearInstances();
+
+        // --- Load Gameplay Background ---
+        String bgPath = level.getBackgroundImage();
+        if (bgPath != null && !bgPath.isEmpty()) {
+            String fullPath = "sampleBGs/" + bgPath;
+            if (Gdx.files.internal(fullPath).exists()) {
+                gameplayBgTexture = new Texture(Gdx.files.internal(fullPath));
+                gameplayBg = new Glyph3D(gameplayBgTexture, new Vector3(Main.WIDTH / 2f, Main.HEIGHT / 2f, -6000f), true); // Position at Z=-4000f
+
+                // Calculate the world dimensions visible by the camera at the background's Z-position
+                float cameraDistanceToBg = cam.position.z - gameplayBg.position.z; // Distance from camera to background
+                float fovYRad = cam.fieldOfView * MathUtils.degreesToRadians;
+
+                // Visible height at background's Z
+                float worldHeightAtBg = 2f * cameraDistanceToBg * MathUtils.tan(fovYRad / 2f);
+                // Visible width at background's Z, maintaining camera's aspect ratio
+                float worldWidthAtBg = worldHeightAtBg * cam.viewportWidth / cam.viewportHeight;
+
+                // Scale the background texture to cover this calculated world area
+                float textureWidth = gameplayBgTexture.getWidth();
+                float textureHeight = gameplayBgTexture.getHeight();
+
+                float scaleX = worldWidthAtBg / textureWidth;
+                float scaleY = worldHeightAtBg / textureHeight;
+                float finalScale = Math.max(scaleX, scaleY); // "Cover" scaling
+
+                gameplayBg.dimension.set(textureWidth * finalScale, textureHeight * finalScale);
+                Gdx.app.log("Gameplay", "Loaded gameplay background: " + bgPath);
+            }
+        }
+
 
         // Create Overlay
         Glyph3D overlay = new Glyph3D(new TextureRegion(overlayTexture), new Vector3(Main.WIDTH / 2f, Main.HEIGHT / 2f, 100f), true);
@@ -195,9 +230,28 @@ public class GameplayScreen implements Screen, InputProcessor {
             rightPlayArea
         );
 
+        // Schedule all level events
+        for (LevelEvent levelEvent : level.getEvents()) {
+            eventManager.addEvent(new Event(timePassed + levelEvent.triggerTime + 3, () -> handleLevelEvent(levelEvent)));
+        }
+
         // Start the level with a 3 second countdown
         float countdownDuration = 3f;
         levelManager.start(countdownDuration);
+
+        // Pre-load all custom shaders for level events
+        for (LevelEvent levelEvent : level.getEvents()) {
+            if (levelEvent.effectName.equals("custom_shader")) {
+                String shaderName = levelEvent.getString("name", null);
+                if (shaderName != null) {
+                    // Assuming custom shaders use a standard vert shader (e.g., "passthrough.vert")
+                    // The user's files have "punch.vert". I'll use that as a default.
+                    String vertPath = "shaders/punch.vert";
+                    String fragPath = "shaders/" + shaderName;
+                    Main.shaderManager.loadShader(shaderName, vertPath, fragPath);
+                }
+            }
+        }
 
         // Schedule music to start after the countdown
         eventManager.addEvent(new Event(Main.timePassed + countdownDuration, () -> {
@@ -223,7 +277,47 @@ public class GameplayScreen implements Screen, InputProcessor {
             if (note.wasHit && note.glyph.position.z > cam.position.z) {
                 note.glyph.isVisible = false; // Hide the glyph
                 note.arrowGlyph.isVisible = false; // Hide the arrow glyph
+                note.approachGlyph.isVisible = false; // Hide the approach circle
                 iterator.remove(); // Remove from active notes
+            }
+        }
+    }
+
+    private void updateNotes(float delta) {
+
+        for (Note note : activeNotes) {
+            // Move the note and its arrow
+            note.glyph.position.z += SCROLL_SPEED * delta;
+            note.arrowGlyph.position.z = note.glyph.position.z;
+
+            // Handle the approach circle, now based on distance
+            float travelDuration = note.hitTime - note.spawnTime;
+            if (travelDuration > 0) {
+                float totalTravelDistance = SCROLL_SPEED * travelDuration;
+                float spawnZ = JUDGEMENT_LINE_Z - totalTravelDistance;
+
+                // Calculate progress (0 at spawn, 1 at judgement line)
+                float progress = (note.glyph.position.z - spawnZ) / totalTravelDistance;
+                progress = Math.max(0, Math.min(1, progress)); // Clamp progress to 0-1 range
+
+                // Animate scale from small to large
+                float startScale = 0.1f; // Starts "really small"
+                float endScale = 1.0f;   // Ends at the note's normal size
+                float currentScale = startScale + (endScale - startScale) * progress;
+
+                float currentSize = NOTE_BASE_SIZE * currentScale;
+                note.approachGlyph.dimension.set(currentSize, currentSize);
+            } else {
+                // If travel duration is zero, just set it to the final size
+                note.approachGlyph.dimension.set(NOTE_BASE_SIZE, NOTE_BASE_SIZE);
+            }
+
+            // Always keep the approach circle at the same Z position as the note
+            note.approachGlyph.position.z = note.glyph.position.z;
+
+            // Hide the approach circle if the note has been processed (hit or missed and past the line)
+            if (note.wasHit || note.glyph.position.z > JUDGEMENT_LINE_Z) {
+                note.approachGlyph.dimension.set(0, 0);
             }
         }
     }
@@ -231,6 +325,7 @@ public class GameplayScreen implements Screen, InputProcessor {
     @Override
     public void render(float delta) {
         // --- Update and Cleanup ---
+        updateNotes(delta);
         checkNotes();
 
         viewport.apply();
@@ -242,7 +337,6 @@ public class GameplayScreen implements Screen, InputProcessor {
 
         cam.update();
         cameraManager.update(delta);
-        //controller.update();
 
         cameraManager.applyEffects();
 
@@ -332,29 +426,32 @@ public class GameplayScreen implements Screen, InputProcessor {
             }
 
             if (shouldDisplayKey) { // Renders the text as long as the arrow key is held
-                Vector3 notePos = note.glyph.position;
-                // Project 3D position to 2D screen coordinates
-                Vector3 screenPos = cam.project(new Vector3(notePos));
+                // Only draw text for notes that are in front of the camera
+                if (note.glyph.position.z < cam.position.z) {
+                    Vector3 notePos = note.glyph.position;
+                    // Project 3D position to 2D screen coordinates
+                    Vector3 screenPos = cam.project(new Vector3(notePos));
 
-                // Sync font alpha with decal alpha
-                float alpha = note.glyph.decal.getColor().a;
-                font.setColor(1, 1, 1, alpha);
+                    // Sync font alpha with decal alpha
+                    float alpha = note.glyph.decal.getColor().a;
+                    font.setColor(1, 1, 1, alpha);
 
-                // Sync font scale with decal scale
-                float noteSize = 150f;
-                float scale = note.glyph.dimension.x / noteSize;
-                font.getData().setScale(2 * scale);
+                    // Sync font scale with decal scale
+                    float noteSize = 150f;
+                    float scale = note.glyph.dimension.x / noteSize;
+                    font.getData().setScale(2 * scale);
 
-                String keyStr = Input.Keys.toString(note.keycode);
-                layout.setText(font, keyStr);
-                float fontX = screenPos.x - layout.width / 2;
-                float fontY = screenPos.y + layout.height / 2;
+                    String keyStr = Input.Keys.toString(note.keycode);
+                    layout.setText(font, keyStr);
+                    float fontX = screenPos.x - layout.width / 2;
+                    float fontY = screenPos.y + layout.height / 2;
 
-                font.draw(spriteBatch, layout, fontX, fontY);
+                    font.draw(spriteBatch, layout, fontX, fontY);
 
-                // Reset font to default
-                font.setColor(Color.WHITE);
-                font.getData().setScale(2);
+                    // Reset font to default
+                    font.setColor(Color.WHITE);
+                    font.getData().setScale(2);
+                }
             }
         }
         spriteBatch.end();
@@ -391,89 +488,6 @@ public class GameplayScreen implements Screen, InputProcessor {
         dispose();
     }
 
-    /*
-    private void spawnRandomNote() {
-        // 1. Select random lane
-        Note.Lane lane;
-        Rectangle targetArea;
-        int laneIndex = random.nextInt(4);
-
-        switch (laneIndex) {
-            case 0:
-                targetArea = leftPlayArea;
-                lane = Note.Lane.LEFT;
-                break;
-            case 1:
-                targetArea = downPlayArea;
-                lane = Note.Lane.DOWN;
-                break;
-            case 2:
-                targetArea = upPlayArea;
-                lane = Note.Lane.UP;
-                break;
-            case 3:
-                targetArea = rightPlayArea;
-                lane = Note.Lane.RIGHT;
-                break;
-            default:
-                return; // Should not happen
-        }
-
-        // 2. Define start and end positions
-        float startX = Main.WIDTH / 2f;
-        float startY = Main.HEIGHT / 2f;
-        float startZ = -3000f; // Start far away
-        float endZ = 1200f;   // End far behind the player camera
-
-        float endX = targetArea.x + targetArea.width / 2f;
-        float endY = targetArea.y + targetArea.height / 2f;
-
-        // Add some random horizontal spread within the lane
-        float padding = 50f; // Prevent notes from being right on the edge
-        float spread = (targetArea.width / 2f) - padding;
-        if (spread > 0) {
-            endX += random.nextFloat() * spread * 2 - spread;
-        }
-
-        // 3. Create note glyph and Note object
-        Glyph3D noteGlyph = new Glyph3D(noteTextureRegion, new Vector3(startX, startY, startZ), true);
-        float noteSize = 150f;
-        noteGlyph.dimension.set(noteSize, noteSize);
-
-        // Get the pre-rotated texture for the arrow
-        TextureRegion arrowTextureRegion = rotatedArrowTextures.get(lane);
-        Glyph3D arrowGlyph = new Glyph3D(arrowTextureRegion, new Vector3(startX, startY, startZ - 1f), true); // Slightly in front
-        float arrowSize = 75f;
-        arrowGlyph.dimension.set(arrowSize, arrowSize);
-
-        // Assign a random key
-        int keycode = GameConstants.PLAYABLE_KEYS.get(random.nextInt(GameConstants.PLAYABLE_KEYS.size()));
-
-        // Calculate duration based on a fixed speed
-        float speed = 1050f; // units per second
-        float distance = Math.abs(endZ - startZ);
-        float duration = distance / speed;
-
-        // Calculate the actual hit time based on the speed and distance to the judgment line
-        float travelDurationToJudgement = Math.abs(JUDGEMENT_LINE_Z - startZ) / speed;
-
-        Note note = new Note(noteGlyph, arrowGlyph, lane, keycode, Main.timePassed, travelDurationToJudgement);
-        activeNotes.add(note);
-
-
-        // 4. Animate it
-        animationManager.animateMove(noteGlyph, endX, endY, endZ, duration, Easing.LINEAR);
-        animationManager.animateMove(arrowGlyph, endX, endY, endZ - 1f, duration, Easing.LINEAR);
-    }
-
-    private void scheduleNextNote() {
-        eventManager.addEvent(new Event(Main.timePassed + 3f, () -> { // Spawn a new note every second
-            spawnRandomNote();
-            scheduleNextNote(); // Schedule the next one
-        }));
-    }
-     */
-
     @Override
     public void dispose() {
         Glyph3D.clearInstances(); // Clear static list
@@ -485,6 +499,9 @@ public class GameplayScreen implements Screen, InputProcessor {
         noteTexture.dispose();
         overlayTexture.dispose();
         arrowTexture.dispose();
+        if (gameplayBgTexture != null) {
+            gameplayBgTexture.dispose();
+        }
         for (TextureRegion region : rotatedArrowTextures.values()) {
             region.getTexture().dispose();
         }
@@ -524,6 +541,7 @@ public class GameplayScreen implements Screen, InputProcessor {
                 animationManager.animateFade(noteToHit.glyph, 0f, 0.2f, Easing.EASE_OUT_QUAD);
                 animationManager.animateScale(noteToHit.arrowGlyph, 100f, 100f, 0.2f, Easing.EASE_OUT_QUAD);
                 animationManager.animateFade(noteToHit.arrowGlyph, 0f, 0.2f, Easing.EASE_OUT_QUAD);
+                animationManager.animateFade(noteToHit.approachGlyph, 0f, 0.2f, Easing.EASE_OUT_QUAD);
             } else if (dist <= GOOD_WINDOW) {
                 System.out.println("GOOD - " + Input.Keys.toString(keycode));
                 noteToHit.wasHit = true;
@@ -531,6 +549,7 @@ public class GameplayScreen implements Screen, InputProcessor {
                 animationManager.animateFade(noteToHit.glyph, 0f, 0.2f, Easing.EASE_OUT_QUAD);
                 animationManager.animateScale(noteToHit.arrowGlyph, 100f, 100f, 0.2f, Easing.EASE_OUT_QUAD);
                 animationManager.animateFade(noteToHit.arrowGlyph, 0f, 0.2f, Easing.EASE_OUT_QUAD);
+                animationManager.animateFade(noteToHit.approachGlyph, 0f, 0.2f, Easing.EASE_OUT_QUAD);
             } else if (dist <= BAD_WINDOW) {
                 System.out.println("BAD - " + Input.Keys.toString(keycode));
                 noteToHit.wasHit = true;
@@ -538,6 +557,7 @@ public class GameplayScreen implements Screen, InputProcessor {
                 animationManager.animateFade(noteToHit.glyph, 0f, 0.2f, Easing.EASE_OUT_QUAD);
                 animationManager.animateScale(noteToHit.arrowGlyph, 100f, 100f, 0.2f, Easing.EASE_OUT_QUAD);
                 animationManager.animateFade(noteToHit.arrowGlyph, 0f, 0.2f, Easing.EASE_OUT_QUAD);
+                animationManager.animateFade(noteToHit.approachGlyph, 0f, 0.2f, Easing.EASE_OUT_QUAD);
             }
         }
 
@@ -594,5 +614,53 @@ public class GameplayScreen implements Screen, InputProcessor {
     @Override
     public boolean scrolled(float amountX, float amountY) {
         return false;
+    }
+
+    private void handleLevelEvent(LevelEvent event) {
+        Gdx.app.log("GameplayScreen", "Event fired: " + event.effectName + " at " + event.triggerTime);
+
+        switch (event.effectName) {
+            case "camera_shake":
+                float shakeDuration = event.getFloat("duration", 0.1f);
+                float shakeIntensity = event.getFloat("intensity", 5f);
+                cameraManager.shake(shakeDuration, shakeIntensity, 0.0025f);
+                break;
+            case "camera_move":
+                float targetX = event.getFloat("x", cam.position.x);
+                float targetY = event.getFloat("y", cam.position.y);
+                float targetZ = event.getFloat("z", cam.position.z);
+                float moveDuration = event.getFloat("duration", 1f);
+                String easingName = event.getString("easing", "LINEAR");
+                Easing easing = Easing.valueOf(easingName.toUpperCase());
+                cameraManager.setPosition3D(targetX, targetY, targetZ, moveDuration, easing);
+                break;
+            case "shader_punch":
+                float punchAmount = event.getFloat("amount", 1f);
+                float punchDuration = event.getFloat("duration", 0f); // Duration for the effect itself
+                Main.shaderManager.setPunch(punchAmount);
+                if (punchDuration > 0) {
+                    // Schedule deactivation if a duration is specified
+                    eventManager.addEvent(new Event(event.triggerTime + punchDuration, () -> {
+                        Main.shaderManager.setPunch(0f);
+                        Main.shaderManager.deactivateShader(); // Deactivate explicitly
+                    }));
+                }
+                break;
+            case "custom_shader":
+                String shaderName = event.getString("name", null);
+                float shaderDuration = event.getFloat("duration", 0f);
+                if (shaderName != null) {
+                    // Custom shaders need to be loaded once, preferably at the beginning of the screen.
+                    // For now, assume it's loaded and just activate it.
+                    Main.shaderManager.activateShader(shaderName, shaderDuration);
+                }
+                break;
+            case "deactivate_shader": // For explicit deactivation
+                Main.shaderManager.deactivateShader();
+                break;
+            default:
+                Gdx.app.error("GameplayScreen", "Unknown event effect: " + event.effectName);
+                break;
+        }
     }
 }

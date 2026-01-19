@@ -8,7 +8,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 public class TextGlyph extends Glyph {
     private String text;
     private BitmapFont font;
-    private final GlyphLayout layout = new GlyphLayout(); //for calculating text dimensions
+    public final GlyphLayout layout = new GlyphLayout(); //for calculating text dimensions
 
     /**
      * Creates a new Glyph that renders text instead of a texture.

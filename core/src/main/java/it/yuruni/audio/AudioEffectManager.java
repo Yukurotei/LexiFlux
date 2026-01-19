@@ -76,4 +76,12 @@ public class AudioEffectManager {
         muffledTrack.dispose();
         clearTrack.dispose();
     }
+
+    public void stop() {
+        muffledTrack.stop();
+        clearTrack.stop();
+        muffledTrack.setVolume(0);
+        clearTrack.setVolume(0);
+        isTransitioning = false;
+    }
 }

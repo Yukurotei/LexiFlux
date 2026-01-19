@@ -9,15 +9,17 @@ public class Note {
 
     public final Glyph3D glyph;
     public final Glyph3D arrowGlyph;
+    public final Glyph3D approachGlyph;  // Approach circle indicator
     public final Lane lane;
     public final int keycode;
     public final float spawnTime;
     public final float hitTime;
     public boolean wasHit = false;
 
-    public Note(Glyph3D glyph, Glyph3D arrowGlyph, Lane lane, int keycode, float spawnTime, float travelDuration) {
+    public Note(Glyph3D glyph, Glyph3D arrowGlyph, Glyph3D approachGlyph, Lane lane, int keycode, float spawnTime, float travelDuration) {
         this.glyph = glyph;
         this.arrowGlyph = arrowGlyph;
+        this.approachGlyph = approachGlyph;
         this.lane = lane;
         this.keycode = keycode;
         this.spawnTime = spawnTime;
