@@ -222,6 +222,15 @@ public class SlantedScrollPane {
         scrollVelocity = 0;
     }
 
+    public void clearItems() {
+        items.clear();
+        Gdx.app.log("SlantedScrollPane", "Items cleared. Total items: " + items.size);
+        updateScrollBounds();
+        hoveredItem = null; // Clear any hovered item
+        currentScrollPosition = 0f; // Reset scroll position
+        scrollVelocity = 0f; // Reset scroll velocity
+    }
+
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
         // The hover logic in update() has already found the item under the cursor.
         if (button == Input.Buttons.LEFT && hoveredItem != null) {

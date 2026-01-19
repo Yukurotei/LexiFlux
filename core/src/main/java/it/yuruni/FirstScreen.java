@@ -61,6 +61,11 @@ public class FirstScreen implements Screen, InputProcessor {
     private com.badlogic.gdx.graphics.glutils.FrameBuffer maskFbo;
     private ShaderProgram alphaMaskShader;
 
+    private final List<Glyph> ownedGlyphs = new ArrayList<>();
+    private final List<Texture> ownedTextures = new ArrayList<>();
+    private final List<BitmapFont> ownedFonts = new ArrayList<>();
+    private final List<YParticleEffect> ownedParticles = new ArrayList<>();
+
     private Glyph bg;
     private Map<String, Texture> backgroundCache;
     private TextGlyph tutorialText;
@@ -100,10 +105,28 @@ public class FirstScreen implements Screen, InputProcessor {
     private TextGlyph levelArtistText;
     private TextGlyph levelBpmText;
     private TextGlyph levelDifficultyText;
+    private BitmapFont titleFont;
+    private BitmapFont infoFont;
+    private BitmapFont cardFont;
+    private Texture levelCardTexture;
+    private Sound slidingHeavy;
+    private Sound doorOpenClose;
+    private Sound slidingLight;
+    private Sound monitorOn;
+    private boolean isCleaned = false;
 
 
     @Override
     public void show() {
+        if (!isCleaned) {
+            cleanupResources();
+        }
+        isCleaned = false;
+        ownedGlyphs.clear();
+        ownedTextures.clear();
+        ownedFonts.clear();
+        ownedParticles.clear();
+
         batch = new SpriteBatch();
         Gdx.input.setInputProcessor(this);
 
@@ -124,28 +147,38 @@ public class FirstScreen implements Screen, InputProcessor {
         concentration2.load(Gdx.files.internal("./particles/downConcentration.p"), Gdx.files.internal("particles"));
         concentration2.setPosition(Main.WIDTH / 2f + 600f, -370);
         concentration2.scaleEffect(3);
+        trackParticle(concentration);
+        trackParticle(concentration2);
 
         //Textures
-        bg = new Glyph(new Texture("./sampleBGs/bg.png"), -192, -108, true);
+        Texture defaultBgTexture = new Texture("./sampleBGs/bg.png");
+        bg = new Glyph(defaultBgTexture, -192, -108, true);
         bg.setAlpha(0f);
+        trackGlyph(bg);
 
         Glyph glyph = new Glyph(new Texture("./logo/LogoLayout.png"), 0, 0, true);
         glyph.setAlpha(0f);
+        trackGlyph(glyph);
 
         Glyph keyboard = new Glyph(new Texture("./keyboard.png"), Main.WIDTH / 2f - 670, 1000, true);
         keyboard.setScaleX(keyboard.getScaleX() * 0.67f);
         keyboard.setScaleY(keyboard.getScaleY() * 0.67f);
+        trackGlyph(keyboard);
 
         Glyph pc = new Glyph(new Texture("./PC.png"), Main.WIDTH / 2f + 550 + 2000, Main.HEIGHT / 2f - 300, true);
         pc.setAlpha(0f);
+        trackGlyph(pc);
 
         Glyph soundMemo = new Glyph(new Texture("./sound.png"), 20, 200, true);
         Glyph soundCover = new Glyph(new Texture("./soundCover.png"), 20, 200, true);
+        trackGlyph(soundMemo);
+        trackGlyph(soundCover);
 
         Glyph flash = new Glyph(new Texture("./whiteCirc.png"), Main.WIDTH / 2f, Main.HEIGHT / 2f, true);
         flash.setScaleX(flash.getScaleX() * 100f);
         flash.setScaleY(flash.getScaleY() * 100f);
         flash.setAlpha(0f);
+        trackGlyph(flash);
 
         Glyph upFade = new Glyph(new Texture("./upwardsFade.png"), 0, 200, true);
         upFade.setAlpha(0f);
@@ -153,15 +186,21 @@ public class FirstScreen implements Screen, InputProcessor {
         downFade.setAlpha(0f);
         downFade.setY(-200);
         fadeGlyphs = new Array<>(new Glyph[]{upFade, downFade});
+        trackGlyph(upFade);
+        trackGlyph(downFade);
 
         //LV selections
         Glyph levelScroll = new Glyph(new Texture("LevelScroll.png"), -600f, 50f, false);
         levelInfo = new Glyph(new Texture("LevelInfo.png"), 300f, 1500f, true);
         levelDifficulties =  new Glyph(new Texture("LevelDifficulties.png"), 520f, -400f, true);
+        trackGlyph(levelScroll);
+        trackGlyph(levelInfo);
+        trackGlyph(levelDifficulties);
 
         // Setup Slanted Scroll Pane
         slantedScrollPane = new SlantedScrollPane(levelScroll, new Vector2(108.7f, -803.2f), Main.camera);
-        Texture levelCardTexture = new Texture("LevelCard.png");
+        levelCardTexture = new Texture("LevelCard.png");
+        trackTexture(levelCardTexture);
 
         // Scan for level files and create cards
         Array<LevelCard> levelCards = LevelScanner.scanLevels(levelCardTexture, this::selectCard);
@@ -209,15 +248,19 @@ public class FirstScreen implements Screen, InputProcessor {
         if (!bgPaths.isEmpty()) {
             String randomBgKey = bgPaths.get(new Random().nextInt(bgPaths.size()));
             bg.setTexture(backgroundCache.get(randomBgKey));
+            defaultBgTexture.dispose();
         }
 
 
         playMenuRect = new Glyph(new Texture("./ui/menuRect.png"), -1000, -1000, true);
         playArrow = new Glyph(new Texture("./ui/playButton.png"), -1000, -1000, true);
+        trackGlyph(playMenuRect);
+        trackGlyph(playArrow);
 
         logo = new Glyph(new Texture("./logo/shortLogo.png"), 323, 289 + 1000, true);
         logo.setScaleX(logo.getScaleX() * 0.15f);
         logo.setScaleY(logo.getScaleY() * 0.15f);
+        trackGlyph(logo);
 
         logoLexi = new Glyph(new Texture("./logo/Lexi.png"), 200 - 1000, 920, true);
         logoLexi.setScaleX(logoLexi.getScaleX() * 0.5f);
@@ -225,6 +268,8 @@ public class FirstScreen implements Screen, InputProcessor {
         logoFlux = new Glyph(new Texture("./logo/Flux.png"), 50 - 1000, 700, true);
         logoFlux.setScaleX(logoFlux.getScaleX() * 0.4f);
         logoFlux.setScaleY(logoLexi.getScaleY() * 0.4f);
+        trackGlyph(logoLexi);
+        trackGlyph(logoFlux);
 
         //Some text
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/josefin-sans-latin-400-normal.ttf"));
@@ -232,17 +277,22 @@ public class FirstScreen implements Screen, InputProcessor {
         parameter.size = 20;
         parameter.color = Color.WHITE;
         font = generator.generateFont(parameter);
+        trackFont(font);
         tutorialText = new TextGlyph("Arrow keys to navigate, space to select", font, Main.WIDTH / 2f - 200, Main.HEIGHT / 2f - 400 - 500, true);
+        trackGlyph(tutorialText);
 
         // Initialize level info text glyphs
         parameter.size = 32;
-        BitmapFont titleFont = generator.generateFont(parameter);
+        titleFont = generator.generateFont(parameter);
         parameter.size = 24;
-        BitmapFont infoFont = generator.generateFont(parameter);
+        infoFont = generator.generateFont(parameter);
+        trackFont(titleFont);
+        trackFont(infoFont);
 
         // Create card text font and set on each card
         parameter.size = 18;
-        BitmapFont cardFont = generator.generateFont(parameter);
+        cardFont = generator.generateFont(parameter);
+        trackFont(cardFont);
         for (LevelCard card : levelCards) {
             card.setFont(cardFont);
         }
@@ -279,6 +329,7 @@ public class FirstScreen implements Screen, InputProcessor {
         mainButton.setScaleX(mainButton.getScaleX() * 0.15f);
         mainButton.setScaleY(mainButton.getScaleY() * 0.15f);
         mainButton.setAlpha(0f);
+        trackGlyph(mainButton);
         mainButton.addOnHoverListener(() -> {
             animationManager.animateRotation(logo, -3f, 0.2f, Easing.EASE_IN_OUT_CIRC); //Do 20 for menu
         });
@@ -287,10 +338,10 @@ public class FirstScreen implements Screen, InputProcessor {
         });
 
         //sfx
-        Sound sliding_heavy = Gdx.audio.newSound(Gdx.files.internal("./audio/heavy-sliding.mp3"));
-        Sound door_open_close = Gdx.audio.newSound(Gdx.files.internal("./audio/door-open-close.mp3"));
-        Sound sliding_light = Gdx.audio.newSound(Gdx.files.internal("./audio/object-sliding.mp3"));
-        Sound monitor_on = Gdx.audio.newSound(Gdx.files.internal("./audio/monitor-on.mp3"));
+        slidingHeavy = Gdx.audio.newSound(Gdx.files.internal("./audio/heavy-sliding.mp3"));
+        doorOpenClose = Gdx.audio.newSound(Gdx.files.internal("./audio/door-open-close.mp3"));
+        slidingLight = Gdx.audio.newSound(Gdx.files.internal("./audio/object-sliding.mp3"));
+        monitorOn = Gdx.audio.newSound(Gdx.files.internal("./audio/monitor-on.mp3"));
 
         /////////
         //Setup//
@@ -298,12 +349,12 @@ public class FirstScreen implements Screen, InputProcessor {
         //PC sliding and phasing in
         animationManager.animateFade(pc, 1f, 3f, Easing.EASE_IN_OUT_QUAD);
         animationManager.animateMove(pc, pc.getX() - 2000, pc.getY(), 2f, Easing.EASE_IN_OUT_CIRC);
-        sliding_heavy.play();
-        door_open_close.play();
+        slidingHeavy.play();
+        doorOpenClose.play();
 
         //Sound visualization (door open)
         eventManager.addEvent(new Event(2.4f, () -> { // Timing changed from 2f
-            monitor_on.play();
+            monitorOn.play();
             cameraManager.shake(0.2f, 3f, 0.0025f);
             animationManager.animateMove(soundCover, soundCover.getX() + 400, soundCover.getY(), 0.25f,Easing.LINEAR);
         }));
@@ -313,7 +364,7 @@ public class FirstScreen implements Screen, InputProcessor {
         }));
         //Keyboard slide down
         eventManager.addEvent(new Event(3f, () -> {
-            sliding_light.play();
+            slidingLight.play();
             animationManager.animateMove(keyboard, keyboard.getX(), keyboard.getY() - 1000, 2f,Easing.EASE_IN_OUT_QUAD);
             animationManager.animateMove(logo, logo.getX(), logo.getY() - 1000, 2f,Easing.EASE_IN_OUT_QUAD);
         }));
@@ -327,7 +378,7 @@ public class FirstScreen implements Screen, InputProcessor {
 
         //Start focus on logo - move everything away, sound start transition
         eventManager.addEvent(new Event(8f, () -> {
-            //audioManager.startTransition(5f, 0.005f, 0.5f, 13f, false);
+            audioManager.startTransition(5f, 0.005f, 0.3f, 13f, false);
             float factor = 3f;
             animationManager.animateScale(keyboard, keyboard.getScaleX() * factor, keyboard.getScaleY() * factor, 4f,Easing.EASE_IN_OUT_QUAD);
             animationManager.animateMove(keyboard, keyboard.getX() + 1000, keyboard.getY() + 180, 4f,Easing.EASE_IN_OUT_QUAD);
@@ -344,7 +395,7 @@ public class FirstScreen implements Screen, InputProcessor {
         this.nextBeatTime = 13f;
         eventManager.addEvent(new Event(13f, () -> {
             upFade.setY(upFade.getY() - 500);
-            monitor_on.stop();
+            monitorOn.stop();
             shaderManager.setPunch(1.0f);
             concentration.start();
             concentration2.start();
@@ -377,10 +428,22 @@ public class FirstScreen implements Screen, InputProcessor {
 
             concentration.allowCompletion();
             concentration2.allowCompletion();
-            sliding_light.dispose();
-            sliding_heavy.dispose();
-            door_open_close.dispose();
-            monitor_on.dispose();
+            if (slidingLight != null) {
+                slidingLight.dispose();
+                slidingLight = null;
+            }
+            if (slidingHeavy != null) {
+                slidingHeavy.dispose();
+                slidingHeavy = null;
+            }
+            if (doorOpenClose != null) {
+                doorOpenClose.dispose();
+                doorOpenClose = null;
+            }
+            if (monitorOn != null) {
+                monitorOn.dispose();
+                monitorOn = null;
+            }
 
             animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() + 500, 2f, Easing.EASE_IN_OUT_EXPO);
 
@@ -665,28 +728,12 @@ public class FirstScreen implements Screen, InputProcessor {
 
     @Override
     public void hide() {
-        // This method is called when another screen replaces this one.
+        cleanupResources();
     }
 
     @Override
     public void dispose() {
-        batch.dispose();
-        audioManager.dispose();
-        font.dispose();
-        alphaMaskShader.dispose();
-
-        if (currentLevelAudio != null) {
-            currentLevelAudio.dispose();
-        }
-        if (levelBackgroundGlyph != null) {
-            levelBackgroundGlyph.getTexture().dispose();
-        }
-        if (backgroundCache != null) {
-            for (Texture texture : backgroundCache.values()) {
-                texture.dispose();
-            }
-            backgroundCache.clear();
-        }
+        cleanupResources();
     }
 
     // --- Level Selection ---
@@ -725,7 +772,7 @@ public class FirstScreen implements Screen, InputProcessor {
             currentLevelAudio = null;
         }
         if (levelBackgroundGlyph != null) {
-            levelBackgroundGlyph.getTexture().dispose();
+            levelBackgroundGlyph.dispose();
             levelBackgroundGlyph = null;
         }
 
@@ -794,6 +841,156 @@ public class FirstScreen implements Screen, InputProcessor {
 
         } catch (Exception e) {
             Gdx.app.error("LevelSelect", "Failed to load level: " + card.getLevelPath(), e);
+        }
+    }
+
+    private void cleanupResources() {
+        if (isCleaned) {
+            return;
+        }
+        isCleaned = true;
+
+        if (audioManager != null) {
+            audioManager.dispose();
+            audioManager = null;
+        }
+        if (currentLevelAudio != null) {
+            currentLevelAudio.dispose();
+            currentLevelAudio = null;
+        }
+        if (levelBackgroundGlyph != null) {
+            levelBackgroundGlyph.dispose();
+            levelBackgroundGlyph = null;
+        }
+
+        if (slidingHeavy != null) {
+            slidingHeavy.dispose();
+            slidingHeavy = null;
+        }
+        if (doorOpenClose != null) {
+            doorOpenClose.dispose();
+            doorOpenClose = null;
+        }
+        if (slidingLight != null) {
+            slidingLight.dispose();
+            slidingLight = null;
+        }
+        if (monitorOn != null) {
+            monitorOn.dispose();
+            monitorOn = null;
+        }
+
+        if (parallaxManager != null) {
+            parallaxManager.clear();
+        }
+        if (eventManager != null) {
+            eventManager.clear();
+        }
+        if (animationManager != null) {
+            animationManager.clear();
+        }
+
+        if (bg != null && backgroundCache != null && !backgroundCache.isEmpty()) {
+            Texture bgTexture = bg.getTexture();
+            if (bgTexture != null) {
+                for (Map.Entry<String, Texture> entry : backgroundCache.entrySet()) {
+                    if (entry.getValue() == bgTexture) {
+                        bg.setTexture(null);
+                        break;
+                    }
+                }
+            }
+        }
+
+        for (Glyph glyph : ownedGlyphs) {
+            if (glyph != null) {
+                glyph.dispose();
+            }
+        }
+        ownedGlyphs.clear();
+        Main.glyphs.clear();
+
+        for (YParticleEffect effect : ownedParticles) {
+            if (effect != null) {
+                Main.particles.remove(effect);
+                if (effect instanceof com.badlogic.gdx.utils.Disposable) {
+                    ((com.badlogic.gdx.utils.Disposable) effect).dispose();
+                }
+            }
+        }
+        ownedParticles.clear();
+        Main.particles.clear();
+
+        for (BitmapFont fontToDispose : ownedFonts) {
+            if (fontToDispose != null) {
+                fontToDispose.dispose();
+            }
+        }
+        ownedFonts.clear();
+        font = null;
+        titleFont = null;
+        infoFont = null;
+        cardFont = null;
+
+        if (backgroundCache != null) {
+            for (Texture texture : backgroundCache.values()) {
+                if (texture != null) {
+                    texture.dispose();
+                }
+            }
+            backgroundCache.clear();
+        }
+
+        for (Texture texture : ownedTextures) {
+            if (texture != null) {
+                texture.dispose();
+            }
+        }
+        ownedTextures.clear();
+
+        if (alphaMaskShader != null) {
+            alphaMaskShader.dispose();
+            alphaMaskShader = null;
+        }
+        if (maskShader != null) {
+            maskShader.dispose();
+            maskShader = null;
+        }
+        if (maskFbo != null) {
+            maskFbo.dispose();
+            maskFbo = null;
+        }
+        if (slantedScrollPane != null) {
+            slantedScrollPane.clearItems();
+            slantedScrollPane = null;
+        }
+        if (batch != null) {
+            batch.dispose();
+            batch = null;
+        }
+    }
+
+    private void trackGlyph(Glyph glyph) {
+        if (glyph != null) {
+            ownedGlyphs.add(glyph);
+        }
+    }
+
+    private void trackTexture(Texture texture) {
+        if (texture != null) {
+            ownedTextures.add(texture);
+        }
+    }
+
+    private void trackFont(BitmapFont fontToTrack) {
+        if (fontToTrack != null) {
+            ownedFonts.add(fontToTrack);
+        }
+    }
+
+    private void trackParticle(YParticleEffect effect) {
+        if (effect != null) {
+            ownedParticles.add(effect);
         }
     }
 

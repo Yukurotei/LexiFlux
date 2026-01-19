@@ -108,7 +108,9 @@ public class GameplayScreen implements Screen, InputProcessor {
 
     private final EventManager eventManager = Main.eventManager;
     private boolean isCameraOffset, isInTransition;
+    private boolean isExiting;
     private final float cameraShiftDelay = 0.1f;
+    private static final float TIMING_OFFSET_MS = 350f;
 
     public GameplayScreen(Level level, Music music) {
         this.level = level;
@@ -119,6 +121,7 @@ public class GameplayScreen implements Screen, InputProcessor {
     @Override
     public void show() {
         isCameraOffset = isInTransition = false;
+        isExiting = false;
         // --- Camera Setup ---
         cam = new PerspectiveCamera(67, Main.WIDTH, Main.HEIGHT);
         cam.position.set(Main.WIDTH / 2f, Main.HEIGHT / 2f, 1000f);
@@ -256,10 +259,16 @@ public class GameplayScreen implements Screen, InputProcessor {
         // Schedule music to start after the countdown
         eventManager.addEvent(new Event(Main.timePassed + countdownDuration, () -> {
             if (music != null) {
+                music.setVolume(level.getVolume());
                 music.play();
                 Gdx.app.log("GameplayScreen", "Music started for level: " + level.getName());
             }
         }));
+
+        float lastNoteSpawnAbsoluteTime = levelManager.getLastNoteSpawnTime();
+        float fallbackExitTime = Main.timePassed + countdownDuration;
+        float exitTime = (lastNoteSpawnAbsoluteTime > 0f ? lastNoteSpawnAbsoluteTime : fallbackExitTime) + 5f;
+        eventManager.addEvent(new Event(exitTime, this::exitToMainMenu));
     }
 
     private void checkNotes() {
@@ -492,19 +501,23 @@ public class GameplayScreen implements Screen, InputProcessor {
     public void dispose() {
         Glyph3D.clearInstances(); // Clear static list
         modelBatch.dispose();
-        cubeModel.dispose();
-        decalBatch.dispose();
-        spriteBatch.dispose();
-        font.dispose();
-        noteTexture.dispose();
-        overlayTexture.dispose();
-        arrowTexture.dispose();
+        //cubeModel.dispose();
+        if (decalBatch != null) decalBatch.dispose();
+        if (spriteBatch != null) spriteBatch.dispose();
+        if (font != null) font.dispose();
+        if (noteTexture != null) noteTexture.dispose();
+        if (overlayTexture != null) overlayTexture.dispose();
+        if (arrowTexture != null) arrowTexture.dispose();
+
         if (gameplayBgTexture != null) {
             gameplayBgTexture.dispose();
         }
         for (TextureRegion region : rotatedArrowTextures.values()) {
             region.getTexture().dispose();
         }
+        // Clear all static managers
+        Main.eventManager.clear();
+        Main.animationManager.clear();
         // Stop and dispose music
         if (music != null) {
             music.stop();
@@ -512,10 +525,42 @@ public class GameplayScreen implements Screen, InputProcessor {
         }
     }
 
+    private void exitToMainMenu() {
+        if (isExiting) {
+            return;
+        }
+        isExiting = true;
+        for (Note note : activeNotes) {
+            note.glyph.isVisible = false;
+            note.arrowGlyph.isVisible = false;
+            note.approachGlyph.isVisible = false;
+        }
+        activeNotes.clear();
+        if (music != null) {
+            music.stop();
+        }
+        ((Main) Gdx.app.getApplicationListener()).setScreen(Main.mainScreen);
+    }
+
     // --- InputProcessor Methods ---
 
     @Override
     public boolean keyDown(int keycode) {
+        if (keycode == Input.Keys.GRAVE) {
+            float elapsedMs = -1f;
+            if (music != null && music.isPlaying()) {
+                elapsedMs = music.getPosition() * 1000f;
+            } else if (levelManager != null && levelManager.getSongStartTime() >= 0f) {
+                elapsedMs = (Main.timePassed - levelManager.getSongStartTime()) * 1000f;
+            }
+            if (elapsedMs < 0f) {
+                Gdx.app.log("GameplayScreen", "Level progress: not started");
+            } else {
+                float adjustedMs = elapsedMs + TIMING_OFFSET_MS;
+                Gdx.app.log("GameplayScreen", String.format("Level progress: %.0f ms", adjustedMs));
+            }
+            return true;
+        }
         // --- Gameplay Input ---
         // Find the closest, hittable note that matches the pressed key
         Note noteToHit = null;

@@ -61,6 +61,10 @@ public class ParallaxManager {
         }
     }
 
+    public void clear() {
+        layers.clear();
+    }
+
     private static class ParallaxLayer {
         final Glyph glyph;
         final float strength;

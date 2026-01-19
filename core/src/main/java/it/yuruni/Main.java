@@ -27,6 +27,7 @@ public class Main extends Game {
     public static ShaderManager shaderManager;
     public static CameraManager cameraManager;
     public static ParallaxManager parallaxManager;
+    public static FirstScreen mainScreen;
 
     //VirtualViewport
     public static OrthographicCamera camera;
@@ -50,7 +51,9 @@ public class Main extends Game {
         viewport = new FitViewport(WIDTH, HEIGHT, camera);
 
         startTime = TimeUtils.nanoTime();
-        setScreen(new FirstScreen());
+
+        mainScreen = new FirstScreen();
+        setScreen(mainScreen);
     }
 
     @Override

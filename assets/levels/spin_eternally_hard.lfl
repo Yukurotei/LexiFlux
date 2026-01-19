@@ -1,0 +1,16 @@
+# LexiFlux Level - Spin Eternally
+
+[Metadata]
+Name: Spin Eternally - Demon
+Artist: Camellia
+BPM: 220
+AudioFile: Camellia - Spin Eternally (from Beat Saber OST4).mp3
+BackgroundImage: co2ver.jpg
+Difficulty: 67
+
+[Notes]
+# time (ms), lane, key
+
+
+[Events]
+2: camera_shake, duration=1.5, intensity=5

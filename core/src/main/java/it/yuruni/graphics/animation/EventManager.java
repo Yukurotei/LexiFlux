@@ -14,4 +14,8 @@ public class EventManager {
             event.trigger(timePassed);
         }
     }
+
+    public void clear() {
+        events.clear();
+    }
 }

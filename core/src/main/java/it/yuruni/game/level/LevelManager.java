@@ -47,6 +47,7 @@ public class LevelManager {
 
     private final Random random = new Random();
     private float songStartTime = -1f; // Will be set when song actually starts
+    private float lastNoteSpawnTime = -1f;
 
     public LevelManager(Level level, List<Note> activeNotes,
                         TextureRegion noteTexture, Map<Note.Lane, TextureRegion> arrowTextures,
@@ -77,6 +78,7 @@ public class LevelManager {
 
     private void scheduleAllNotes() {
         List<NoteData> notes = level.getNotes();
+        lastNoteSpawnTime = -1f;
 
         for (NoteData noteData : notes) {
             // Convert milliseconds to seconds
@@ -88,11 +90,22 @@ public class LevelManager {
 
             // Schedule the spawn
             float absoluteSpawnTime = songStartTime + spawnTimeSeconds;
+            if (absoluteSpawnTime > lastNoteSpawnTime) {
+                lastNoteSpawnTime = absoluteSpawnTime;
+            }
 
             eventManager.addEvent(new Event(absoluteSpawnTime, () -> {
                 spawnNote(noteData, travelTime);
             }));
         }
+    }
+
+    public float getLastNoteSpawnTime() {
+        return lastNoteSpawnTime;
+    }
+
+    public float getSongStartTime() {
+        return songStartTime;
     }
 
     private void spawnNote(NoteData noteData, float travelTime) {

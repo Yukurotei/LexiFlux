@@ -493,4 +493,11 @@ public class AnimationManager {
             magnitude = 0;
         }
     }
+
+    public void clear() {
+        for (int i = animations.size - 1; i >= 0; i--) {
+            Animation anim = animations.removeIndex(i);
+            animationPool.free(anim);
+        }
+    }
 }
