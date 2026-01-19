@@ -399,9 +399,7 @@ public class FirstScreen implements Screen, InputProcessor {
             shaderManager.setPunch(1.0f);
             concentration.start();
             concentration2.start();
-            //animationManager.animatePulse(logo, 220, 1.05f); //TODO: REPLACE WITH ACTUAL BASS DETECTION
-            //animationManager.animatePulse(logoLexi, 220, 1.05f);
-            //animationManager.animatePulse(logoFlux, 220, 1.05f);
+            startPulses();
             animationManager.animateFade(flash, 1f, 0.5f,Easing.EASE_IN_OUT_EXPO);
             parallaxManager.addLayer(bg, 0.02f, 0.1f);
         }));
@@ -455,259 +453,272 @@ public class FirstScreen implements Screen, InputProcessor {
         }));
     }
 
-        @Override
-        public void render(float delta) {
-            // --- Update logic ---
-            audioManager.update(delta);
-            cameraManager.update(delta);
-            parallaxManager.update(delta);
-            if (slantedScrollPane != null) {
-                slantedScrollPane.update(delta);
-            }
+    public void startPulses() {
+        animationManager.animatePulse(logo, 220, 1.05f); //TODO: REPLACE WITH ACTUAL BASS DETECTION
+        animationManager.animatePulse(logoLexi, 220, 1.05f);
+        animationManager.animatePulse(logoFlux, 220, 1.05f);
+    }
 
-            if (mainButton != null) mainButton.update(delta);
+    public void stopPulses() {
+        animationManager.stopPulsing(logo);
+        animationManager.stopPulsing(logoLexi);
+        animationManager.stopPulsing(logoFlux);
+    }
 
-            if (Main.timePassed >= nextBeatTime && nextBeatTime > 0) {
-                nextBeatTime += beatInterval;
-                Glyph targetGlyph = fadeGlyphs.random();
-                animationManager.animateFade(targetGlyph, 0.5f, 0.1f, Easing.EASE_OUT_SINE);
-                eventManager.addEvent(new Event(Main.timePassed + 0.1f, () -> {
-                    animationManager.animateFade(targetGlyph, 0f, 0.3f, Easing.EASE_IN_SINE);
-                }));
-            }
+    @Override
+    public void render(float delta) {
+        // --- Update logic ---
+        audioManager.update(delta);
+        cameraManager.update(delta);
+        parallaxManager.update(delta);
+        if (slantedScrollPane != null) {
+            slantedScrollPane.update(delta);
+        }
 
-            // --- menu switching stuff ---
-            if (isInMainMenu) {
-                if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-                    if (Gdx.input.isKeyPressed(Input.Keys.SPACE) && playMenuRect.getAlpha() == 0.99f) {
-                        animationManager.stopPulsing(logo);
-                        animationManager.stopPulsing(logoLexi);
-                        animationManager.stopPulsing(logoFlux);
-                        playMenuRect.setAlpha(0.98f);
-                        animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() - 500, 1f, Easing.EASE_IN_OUT_EXPO);
-                        animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectOriginY, 0.3f, Easing.EASE_IN_OUT_QUINT);
-                        animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.5f, Easing.EASE_IN_OUT_QUINT);
-                        animationManager.animateRotation(playArrow, -5f, 0.5f, Easing.EASE_IN_OUT_BACK);
-                        animationManager.animateScale(logo, 0.3f, 0.3f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                        animationManager.animateScale(logoLexi, 0.35f, 0.35f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                        animationManager.animateScale(logoFlux, 0.25f, 0.25f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                        eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
-                            playMenuRect.setVisible(false);
-                            animationManager.animateMove(playArrow, playArrow.getX() - 1500, playArrow.getY(), 1f, Easing.EASE_IN_OUT_QUINT);
-                            eventManager.addEvent(new Event(Main.timePassed + 0.2f, () -> {
-                                playMenuRect.setAlpha(0f);
-                                playMenuRect.setVisible(true);
-                                animationManager.animateMove(logo, -192.5f, 715, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                                animationManager.animateMove(logoLexi, 41, 940, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                                animationManager.animateMove(logoFlux, -121, 750, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                                //LV menus
-                                animationManager.animateMove(slantedScrollPane.getBackground(), 20f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                                animationManager.animateMove(levelInfo, 406.5f, 345f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                                animationManager.animateMove(levelDifficulties, 482, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                                // Move text with levelInfo panel
-                                animationManager.animateMove(levelNameText, 456.5f, 595f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                                animationManager.animateMove(levelArtistText, 456.5f, 545f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                                animationManager.animateMove(levelBpmText, 456.5f, 495f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                                animationManager.animateMove(levelDifficultyText, 456.5f, 445f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                                mainButton.setY(670);
-                                mainButton.setX(-140);
-                                eventManager.addEvent(new Event(Main.timePassed + 1f, () -> {
-                                    isInMainMenu = false;
-                                }));
-                            }));
-                        }));
-                        ElementUtils.putAfter(Main.glyphs, playArrow, logo);
-                    }
-                    if (playMenuRect.getAlpha() == 1f) {
-                        animationManager.stopAllAnimations(playArrow);
-                        animationManager.stopAllAnimations(playMenuRect);
-                        animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectExtendedY, 0.3f, Easing.EASE_IN_OUT_QUINT);
-                        animationManager.animateMove(playArrow, playArrow.getX(), playArrowExtendedY, 0.4f, Easing.EASE_IN_OUT_QUINT);
-                        animationManager.animateRotation(playArrow, 360, 0.4f, Easing.EASE_IN_OUT_EXPO);
-                        playMenuRect.setAlpha(0.98f);
-                        eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
-                            playMenuRect.setAlpha(0.99f);
-                        }));
-                    }
-                } else {
-                    if (playMenuRect.getAlpha() == 0.99f) {
-                        animationManager.stopAllAnimations(playArrow);
-                        animationManager.stopAllAnimations(playMenuRect);
-                        animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectOriginY, 0.3f, Easing.EASE_IN_OUT_QUINT);
-                        animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.4f, Easing.EASE_IN_OUT_QUINT);
-                        animationManager.animateRotation(playArrow, -360, 0.4f, Easing.EASE_IN_OUT_CIRC);
-                        playMenuRect.setAlpha(0.98f);
-                        eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
-                            playMenuRect.setAlpha(1f);
-                        }));
-                    }
-                }
-            } else {
-                if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
-                    isInMainMenu = true;
-                    animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() + 500, 1f, Easing.EASE_IN_OUT_EXPO);
-                    animationManager.animateRotation(playArrow, 0, 0.5f, Easing.EASE_IN_OUT_BACK);
+        if (mainButton != null) mainButton.update(delta);
+
+        if (Main.timePassed >= nextBeatTime && nextBeatTime > 0) {
+            nextBeatTime += beatInterval;
+            Glyph targetGlyph = fadeGlyphs.random();
+            animationManager.animateFade(targetGlyph, 0.5f, 0.1f, Easing.EASE_OUT_SINE);
+            eventManager.addEvent(new Event(Main.timePassed + 0.1f, () -> {
+                animationManager.animateFade(targetGlyph, 0f, 0.3f, Easing.EASE_IN_SINE);
+            }));
+        }
+
+        // --- menu switching stuff ---
+        if (isInMainMenu) {
+            if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+                if (Gdx.input.isKeyPressed(Input.Keys.SPACE) && playMenuRect.getAlpha() == 0.99f) {
+                    stopPulses();
+                    playMenuRect.setAlpha(0.98f);
+                    animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() - 500, 1f, Easing.EASE_IN_OUT_EXPO);
+                    animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectOriginY, 0.3f, Easing.EASE_IN_OUT_QUINT);
                     animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.5f, Easing.EASE_IN_OUT_QUINT);
-                    animationManager.animateMove(logo, playMenuRect.getX() - 5f, playMenuRect.getY() - 50, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                    animationManager.animateScale(logo, 0.45f, 0.45f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                    animationManager.animateScale(logoLexi, 0.5f, 0.5f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                    animationManager.animateScale(logoFlux, 0.4f, 0.4f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                    animationManager.animateMove(logoLexi, logoLexi.getX() - 850, logoLexi.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
-                    animationManager.animateMove(logoFlux, logoFlux.getX() - 850, logoFlux.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
-                    animationManager.animateMove(slantedScrollPane.getBackground(), -600f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                    animationManager.animateMove(levelInfo, 300f, 1500f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                    animationManager.animateMove(levelDifficulties, 520f, -400f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-
-                    // Move text back off-screen with levelInfo panel
-                    animationManager.animateMove(levelNameText, 350f, 1750f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                    animationManager.animateMove(levelArtistText, 350f, 1700f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                    animationManager.animateMove(levelBpmText, 350f, 1650f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-                    animationManager.animateMove(levelDifficultyText, 350f, 1600f, 1f, Easing.EASE_IN_OUT_ELASTIC);
-
-                    // Fade out level info text and background
-                    animationManager.animateFade(levelNameText, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
-                    animationManager.animateFade(levelArtistText, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
-                    animationManager.animateFade(levelBpmText, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
-                    animationManager.animateFade(levelDifficultyText, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
-                    if (levelBackgroundGlyph != null) {
-                        animationManager.animateFade(levelBackgroundGlyph, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
-                    }
-
-                    mainButton.setY(playMenuRect.getY() - 5f);
-                    mainButton.setX(playMenuRect.getX() - 50);
+                    animationManager.animateRotation(playArrow, -5f, 0.5f, Easing.EASE_IN_OUT_BACK);
+                    animationManager.animateScale(logo, 0.3f, 0.3f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateScale(logoLexi, 0.35f, 0.35f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                    animationManager.animateScale(logoFlux, 0.25f, 0.25f, 1f, Easing.EASE_IN_OUT_ELASTIC);
                     eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
-                        animationManager.animateMove(playArrow, playArrow.getX() + 1500, playArrow.getY(), 1f, Easing.EASE_IN_OUT_QUINT);
+                        playMenuRect.setVisible(false);
+                        animationManager.animateMove(playArrow, playArrow.getX() - 1500, playArrow.getY(), 1f, Easing.EASE_IN_OUT_QUINT);
                         eventManager.addEvent(new Event(Main.timePassed + 0.2f, () -> {
+                            playMenuRect.setAlpha(0f);
+                            playMenuRect.setVisible(true);
+                            animationManager.animateMove(logo, -192.5f, 715, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                            animationManager.animateMove(logoLexi, 41, 940, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                            animationManager.animateMove(logoFlux, -121, 750, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                            //LV menus
+                            animationManager.animateMove(slantedScrollPane.getBackground(), 20f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                            animationManager.animateMove(levelInfo, 406.5f, 345f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                            animationManager.animateMove(levelDifficulties, 482, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                            // Move text with levelInfo panel
+                            animationManager.animateMove(levelNameText, 456.5f, 595f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                            animationManager.animateMove(levelArtistText, 456.5f, 545f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                            animationManager.animateMove(levelBpmText, 456.5f, 495f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                            animationManager.animateMove(levelDifficultyText, 456.5f, 445f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                            mainButton.setY(670);
+                            mainButton.setX(-140);
                             eventManager.addEvent(new Event(Main.timePassed + 1f, () -> {
-                                playMenuRect.setAlpha(1f);
+                                startPulses();
+                                isInMainMenu = false;
                             }));
                         }));
                     }));
-                    ElementUtils.putBefore(Main.glyphs, playArrow, logo);
+                    ElementUtils.putAfter(Main.glyphs, playArrow, logo);
+                }
+                if (playMenuRect.getAlpha() == 1f) {
+                    animationManager.stopAllAnimations(playArrow);
+                    animationManager.stopAllAnimations(playMenuRect);
+                    animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectExtendedY, 0.3f, Easing.EASE_IN_OUT_QUINT);
+                    animationManager.animateMove(playArrow, playArrow.getX(), playArrowExtendedY, 0.4f, Easing.EASE_IN_OUT_QUINT);
+                    animationManager.animateRotation(playArrow, 360, 0.4f, Easing.EASE_IN_OUT_EXPO);
+                    playMenuRect.setAlpha(0.98f);
+                    eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
+                        playMenuRect.setAlpha(0.99f);
+                    }));
+                }
+            } else {
+                if (playMenuRect.getAlpha() == 0.99f) {
+                    animationManager.stopAllAnimations(playArrow);
+                    animationManager.stopAllAnimations(playMenuRect);
+                    animationManager.animateMove(playMenuRect, playMenuRect.getX(), playMenuRectOriginY, 0.3f, Easing.EASE_IN_OUT_QUINT);
+                    animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.4f, Easing.EASE_IN_OUT_QUINT);
+                    animationManager.animateRotation(playArrow, -360, 0.4f, Easing.EASE_IN_OUT_CIRC);
+                    playMenuRect.setAlpha(0.98f);
+                    eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
+                        playMenuRect.setAlpha(1f);
+                    }));
                 }
             }
+        } else {
+            if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
+                isInMainMenu = true;
+                stopPulses();
+                animationManager.animateMove(tutorialText, tutorialText.getX(), tutorialText.getY() + 500, 1f, Easing.EASE_IN_OUT_EXPO);
+                animationManager.animateRotation(playArrow, 0, 0.5f, Easing.EASE_IN_OUT_BACK);
+                animationManager.animateMove(playArrow, playArrow.getX(), playArrowOriginY, 0.5f, Easing.EASE_IN_OUT_QUINT);
+                animationManager.animateMove(logo, playMenuRect.getX() - 5f, playMenuRect.getY() - 50, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                animationManager.animateScale(logo, 0.45f, 0.45f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                animationManager.animateScale(logoLexi, 0.5f, 0.5f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                animationManager.animateScale(logoFlux, 0.4f, 0.4f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                animationManager.animateMove(logoLexi, logoLexi.getX() - 850, logoLexi.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
+                animationManager.animateMove(logoFlux, logoFlux.getX() - 850, logoFlux.getY(), 1f, Easing.EASE_IN_OUT_ELASTIC);
+                animationManager.animateMove(slantedScrollPane.getBackground(), -600f, 50f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                animationManager.animateMove(levelInfo, 300f, 1500f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                animationManager.animateMove(levelDifficulties, 520f, -400f, 1f, Easing.EASE_IN_OUT_ELASTIC);
 
-            // Synchronize level background with the info panel's transform each frame
-            if (levelBackgroundGlyph != null && levelInfo != null) {
-                // Since the background texture is now cropped to match the info panel,
-                // we can just copy the panel's transform directly.
-                levelBackgroundGlyph.setX(levelInfo.getX());
-                levelBackgroundGlyph.setY(levelInfo.getY());
-                levelBackgroundGlyph.setScaleX(levelInfo.getScaleX());
-                levelBackgroundGlyph.setScaleY(levelInfo.getScaleY());
-                levelBackgroundGlyph.setRotation(levelInfo.getRotation());
+                // Move text back off-screen with levelInfo panel
+                animationManager.animateMove(levelNameText, 350f, 1750f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                animationManager.animateMove(levelArtistText, 350f, 1700f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                animationManager.animateMove(levelBpmText, 350f, 1650f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+                animationManager.animateMove(levelDifficultyText, 350f, 1600f, 1f, Easing.EASE_IN_OUT_ELASTIC);
+
+                // Fade out level info text and background
+                animationManager.animateFade(levelNameText, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+                animationManager.animateFade(levelArtistText, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+                animationManager.animateFade(levelBpmText, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+                animationManager.animateFade(levelDifficultyText, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+                if (levelBackgroundGlyph != null) {
+                    animationManager.animateFade(levelBackgroundGlyph, 0f, 0.3f, Easing.EASE_IN_OUT_QUAD);
+                }
+
+                mainButton.setY(playMenuRect.getY() - 5f);
+                mainButton.setX(playMenuRect.getX() - 50);
+                eventManager.addEvent(new Event(Main.timePassed + 0.4f, () -> {
+                    animationManager.animateMove(playArrow, playArrow.getX() + 1500, playArrow.getY(), 1f, Easing.EASE_IN_OUT_QUINT);
+                    eventManager.addEvent(new Event(Main.timePassed + 0.2f, () -> {
+                        eventManager.addEvent(new Event(Main.timePassed + 1f, () -> {
+                            startPulses();
+                            playMenuRect.setAlpha(1f);
+                        }));
+                    }));
+                }));
+                ElementUtils.putBefore(Main.glyphs, playArrow, logo);
             }
+        }
 
-            // --- Apply camera effects ---
-            cameraManager.applyEffects();
+        // Synchronize level background with the info panel's transform each frame
+        if (levelBackgroundGlyph != null && levelInfo != null) {
+            // Since the background texture is now cropped to match the info panel,
+            // we can just copy the panel's transform directly.
+            levelBackgroundGlyph.setX(levelInfo.getX());
+            levelBackgroundGlyph.setY(levelInfo.getY());
+            levelBackgroundGlyph.setScaleX(levelInfo.getScaleX());
+            levelBackgroundGlyph.setScaleY(levelInfo.getScaleY());
+            levelBackgroundGlyph.setRotation(levelInfo.getRotation());
+        }
 
-            // --- Render scene into ShaderManager's FBO ---
-            shaderManager.begin();
+        // --- Apply camera effects ---
+        cameraManager.applyEffects();
 
-            ScreenUtils.clear(0, 0, 0, 1); // Clear the FBO
+        // --- Render scene into ShaderManager's FBO ---
+        shaderManager.begin();
 
-            batch.setProjectionMatrix(Main.camera.combined);
+        ScreenUtils.clear(0, 0, 0, 1); // Clear the FBO
+
+        batch.setProjectionMatrix(Main.camera.combined);
 
 
+        batch.begin();
+
+        animationManager.updateAndRenderGlyphs(delta, batch);
+
+        // Render background with alpha masking using levelInfo as the mask
+        if (levelBackgroundGlyph != null && levelBackgroundGlyph.isVisible() && levelInfo != null && levelInfo.isVisible()) {
+            levelBackgroundGlyph.update(delta);
+
+            batch.end(); // End current batch
+
+            // Start batch with alpha mask shader
+            batch.setShader(alphaMaskShader);
             batch.begin();
 
-            animationManager.updateAndRenderGlyphs(delta, batch);
+            // Bind the mask texture (levelInfo) to texture unit 1
+            levelInfo.getTexture().bind(1);
 
-            // Render background with alpha masking using levelInfo as the mask
-            if (levelBackgroundGlyph != null && levelBackgroundGlyph.isVisible() && levelInfo != null && levelInfo.isVisible()) {
-                levelBackgroundGlyph.update(delta);
+            // Bind the background texture to texture unit 0 (default)
+            levelBackgroundGlyph.getTexture().bind(0);
 
-                batch.end(); // End current batch
+            // Set shader uniforms
+            alphaMaskShader.setUniformi("u_texture", 0); // Background texture
+            alphaMaskShader.setUniformi("u_mask", 1);    // Mask texture (levelInfo)
 
-                // Start batch with alpha mask shader
-                batch.setShader(alphaMaskShader);
-                batch.begin();
+            // Calculate screen positions and scales
+            float bgCenterX = levelBackgroundGlyph.getX();
+            float bgCenterY = levelBackgroundGlyph.getY();
+            float bgWidth = levelBackgroundGlyph.getWidth() * levelBackgroundGlyph.getScaleX();
+            float bgHeight = levelBackgroundGlyph.getHeight() * levelBackgroundGlyph.getScaleY();
 
-                // Bind the mask texture (levelInfo) to texture unit 1
-                levelInfo.getTexture().bind(1);
+            float maskCenterX = levelInfo.getX();
+            float maskCenterY = levelInfo.getY();
+            float maskWidth = levelInfo.getWidth() * levelInfo.getScaleX();
+            float maskHeight = levelInfo.getHeight() * levelInfo.getScaleY();
 
-                // Bind the background texture to texture unit 0 (default)
-                levelBackgroundGlyph.getTexture().bind(0);
+            // Set offset and scale uniforms for coordinate transformation
+            // Convert from screen space to texture space
+            alphaMaskShader.setUniformf("u_bgOffset", bgCenterX - bgWidth / 2f, bgCenterY - bgHeight / 2f);
+            alphaMaskShader.setUniformf("u_bgScale", bgWidth, bgHeight);
+            alphaMaskShader.setUniformf("u_maskOffset", maskCenterX - maskWidth / 2f, maskCenterY - maskHeight / 2f);
+            alphaMaskShader.setUniformf("u_maskScale", maskWidth, maskHeight);
 
-                // Set shader uniforms
-                alphaMaskShader.setUniformi("u_texture", 0); // Background texture
-                alphaMaskShader.setUniformi("u_mask", 1);    // Mask texture (levelInfo)
-
-                // Calculate screen positions and scales
-                float bgCenterX = levelBackgroundGlyph.getX();
-                float bgCenterY = levelBackgroundGlyph.getY();
-                float bgWidth = levelBackgroundGlyph.getWidth() * levelBackgroundGlyph.getScaleX();
-                float bgHeight = levelBackgroundGlyph.getHeight() * levelBackgroundGlyph.getScaleY();
-
-                float maskCenterX = levelInfo.getX();
-                float maskCenterY = levelInfo.getY();
-                float maskWidth = levelInfo.getWidth() * levelInfo.getScaleX();
-                float maskHeight = levelInfo.getHeight() * levelInfo.getScaleY();
-
-                // Set offset and scale uniforms for coordinate transformation
-                // Convert from screen space to texture space
-                alphaMaskShader.setUniformf("u_bgOffset", bgCenterX - bgWidth / 2f, bgCenterY - bgHeight / 2f);
-                alphaMaskShader.setUniformf("u_bgScale", bgWidth, bgHeight);
-                alphaMaskShader.setUniformf("u_maskOffset", maskCenterX - maskWidth / 2f, maskCenterY - maskHeight / 2f);
-                alphaMaskShader.setUniformf("u_maskScale", maskWidth, maskHeight);
-
-                // Render the background with the shader
-                levelBackgroundGlyph.render(batch);
-
-                batch.end();
-
-                // Reset shader and restart batch
-                batch.setShader(null);
-                batch.begin();
-            }
-
-            // Render levelInfo frame on top
-            if (levelInfo != null && levelInfo.isVisible()) {
-                levelInfo.render(batch);
-            }
-
-            if (levelNameText != null) levelNameText.render(batch);
-            if (levelArtistText != null) levelArtistText.render(batch);
-            if (levelBpmText != null) levelBpmText.render(batch);
-            if (levelDifficultyText != null) levelDifficultyText.render(batch);
-
-            for (YParticleEffect eff : Main.particles) {
-                eff.update(delta);
-                eff.draw(batch);
-            }
-            slantedScrollPane.render(Main.camera, batch);
-
-            // Render the glyph editor UI
-            if (glyphEditor != null) {
-                glyphEditor.render(batch, font);
-            }
-            if (mouseInspector != null) {
-                mouseInspector.render(batch, font);
-            }
-
-            // Render debug text for the scroll pane
-            if (mouseInspector != null) {
-                if (mouseInspector.isEnabled()) {
-                    if (slantedScrollPane != null) {
-                        Glyph firstCard = slantedScrollPane.getFirstItem();
-                        if (firstCard != null) {
-                            font.setColor(Color.RED);
-                            String coords = String.format("Card1: %.1f, %.1f", firstCard.getX(), firstCard.getY());
-                            font.draw(batch, coords, firstCard.getX(), firstCard.getY() - 20);
-                            font.setColor(Color.WHITE);
-                        }
-                    }
-                }
-            }
+            // Render the background with the shader
+            levelBackgroundGlyph.render(batch);
 
             batch.end();
 
-            // --- End FBO rendering and apply shaders to screen ---
-            shaderManager.end(delta);
-
-            // --- Reset camera effects ---
-            cameraManager.resetEffects();
+            // Reset shader and restart batch
+            batch.setShader(null);
+            batch.begin();
         }
+
+        // Render levelInfo frame on top
+        if (levelInfo != null && levelInfo.isVisible()) {
+            levelInfo.render(batch);
+        }
+
+        if (levelNameText != null) levelNameText.render(batch);
+        if (levelArtistText != null) levelArtistText.render(batch);
+        if (levelBpmText != null) levelBpmText.render(batch);
+        if (levelDifficultyText != null) levelDifficultyText.render(batch);
+
+        for (YParticleEffect eff : Main.particles) {
+            eff.update(delta);
+            eff.draw(batch);
+        }
+        slantedScrollPane.render(Main.camera, batch);
+
+        // Render the glyph editor UI
+        if (glyphEditor != null) {
+            glyphEditor.render(batch, font);
+        }
+        if (mouseInspector != null) {
+            mouseInspector.render(batch, font);
+        }
+
+        // Render debug text for the scroll pane
+        if (mouseInspector != null) {
+            if (mouseInspector.isEnabled()) {
+                if (slantedScrollPane != null) {
+                    Glyph firstCard = slantedScrollPane.getFirstItem();
+                    if (firstCard != null) {
+                        font.setColor(Color.RED);
+                        String coords = String.format("Card1: %.1f, %.1f", firstCard.getX(), firstCard.getY());
+                        font.draw(batch, coords, firstCard.getX(), firstCard.getY() - 20);
+                        font.setColor(Color.WHITE);
+                    }
+                }
+            }
+        }
+
+        batch.end();
+
+        // --- End FBO rendering and apply shaders to screen ---
+        shaderManager.end(delta);
+
+        // --- Reset camera effects ---
+        cameraManager.resetEffects();
+    }
 
     @Override
     public void resize(int width, int height) {
