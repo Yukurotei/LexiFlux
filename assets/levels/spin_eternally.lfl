@@ -7,7 +7,7 @@ BPM: 220
 AudioFile: Camellia - Spin Eternally (from Beat Saber OST4).mp3
 BackgroundImage: co2ver.jpg
 Difficulty: 3
-Volume: 1.0
+Volume: 0.5
 
 [Notes]
 # time (ms), lane, key

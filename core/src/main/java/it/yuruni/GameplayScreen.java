@@ -546,7 +546,7 @@ public class GameplayScreen implements Screen, InputProcessor {
 
     @Override
     public boolean keyDown(int keycode) {
-        if (keycode == Input.Keys.GRAVE) {
+        if (keycode == Input.Keys.GRAVE || keycode == Input.Keys.NUM_7 || keycode == Input.Keys.NUM_9) {
             float elapsedMs = -1f;
             if (music != null && music.isPlaying()) {
                 elapsedMs = music.getPosition() * 1000f;
