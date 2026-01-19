@@ -3,10 +3,8 @@ package it.yuruni;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.utils.TimeUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import it.yuruni.game.level.Level;
 import it.yuruni.graphics.animation.AnimationManager;
 import it.yuruni.graphics.animation.EventManager;
 import it.yuruni.graphics.element.Glyph;
@@ -35,7 +33,8 @@ public class Main extends Game {
     public static final float WIDTH = 1920, HEIGHT = 1080;
 
     public static float timePassed = 0f;
-    private static long startTime;
+    private static final float MAX_FRAME_DELTA = 0.1f;
+    private boolean firstFrame = true;
 
 
     @Override
@@ -50,17 +49,22 @@ public class Main extends Game {
         cameraManager = new CameraManager(camera);
         viewport = new FitViewport(WIDTH, HEIGHT, camera);
 
-        startTime = TimeUtils.nanoTime();
-
         mainScreen = new FirstScreen();
         setScreen(mainScreen);
     }
 
     @Override
     public void render() {
-        timePassed = (TimeUtils.nanoTime() - startTime) / 1_000_000_000.0f;
+        float delta = Math.min(Gdx.graphics.getDeltaTime(), MAX_FRAME_DELTA);
+
+        if (firstFrame) {
+            delta = 0f;
+            firstFrame = false;
+        }
+
+        timePassed += delta;
         eventManager.update(timePassed);
-        animationManager.update(Gdx.graphics.getDeltaTime());
+        animationManager.update(delta);
         super.render();
     }
 
