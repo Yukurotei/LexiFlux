@@ -19,6 +19,7 @@ public class Level {
     private String audioFile;
     private String backgroundImage;
     private int difficulty;
+    private float volume = 1f;
 
     private final List<NoteData> notes = new ArrayList<>();
     private final List<LevelEvent> events = new ArrayList<>();
@@ -104,6 +105,18 @@ public class Level {
                     Gdx.app.error("Level", "Invalid difficulty: " + value);
                 }
                 break;
+            case "Volume":
+                try {
+                    float parsed = Float.parseFloat(value);
+                    if (parsed < 0.01f || parsed > 1f) {
+                        Gdx.app.error("Level", "Volume out of range (0.01-1): " + value);
+                    } else {
+                        this.volume = parsed;
+                    }
+                } catch (NumberFormatException e) {
+                    Gdx.app.error("Level", "Invalid volume: " + value);
+                }
+                break;
         }
     }
 
@@ -141,6 +154,7 @@ public class Level {
     public String getAudioFile() { return audioFile; }
     public String getBackgroundImage() { return backgroundImage; }
     public int getDifficulty() { return difficulty; }
+    public float getVolume() { return volume; }
     public List<NoteData> getNotes() { return notes; }
     public List<LevelEvent> getEvents() { return events; }
 
